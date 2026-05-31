@@ -1,0 +1,1987 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liuguang UI Refactor Prototype</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+    :root {
+      --bg: #000;
+      --shell: #050508;
+      --surface: #0b0d12;
+      --surface-2: #11141d;
+      --surface-3: #181c27;
+      --line: rgba(255, 255, 255, .09);
+      --line-strong: rgba(255, 255, 255, .15);
+      --text: #f8fafc;
+      --muted: #9aa3b2;
+      --dim: #6d7686;
+      --red: #e11d48;
+      --red-soft: rgba(225, 29, 72, .14);
+      --green: #22c55e;
+      --green-soft: rgba(34, 197, 94, .13);
+      --amber: #f59e0b;
+      --blue: #38bdf8;
+      --radius: 8px;
+      --shadow: 0 28px 70px rgba(0, 0, 0, .55);
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    body {
+      min-height: 100dvh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 14% 8%, rgba(225, 29, 72, .16), transparent 28rem),
+        radial-gradient(circle at 88% 16%, rgba(56, 189, 248, .10), transparent 24rem),
+        linear-gradient(180deg, #08090d 0%, #000 62%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid rgba(248, 250, 252, .92);
+      outline-offset: 2px;
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(280px, 360px);
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 18px;
+    }
+
+    .phone {
+      position: relative;
+      width: min(430px, calc(100vw - 36px));
+      height: min(930px, calc(100dvh - 36px));
+      min-height: 780px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 32px;
+      background: var(--shell);
+      box-shadow: var(--shadow);
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 38px 1fr 74px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .035), transparent 180px),
+        var(--shell);
+    }
+
+    .status {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      padding: 0 22px 8px;
+      color: rgba(248, 250, 252, .82);
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .signal {
+      display: inline-flex;
+      align-items: end;
+      gap: 2px;
+      height: 13px;
+    }
+
+    .signal span {
+      width: 3px;
+      border-radius: 3px;
+      background: currentColor;
+    }
+
+    .signal span:nth-child(1) { height: 5px; opacity: .55; }
+    .signal span:nth-child(2) { height: 8px; opacity: .7; }
+    .signal span:nth-child(3) { height: 11px; }
+
+    .battery {
+      width: 22px;
+      height: 11px;
+      position: relative;
+      border: 1.5px solid currentColor;
+      border-radius: 3px;
+    }
+
+    .battery::before {
+      content: "";
+      position: absolute;
+      inset: 2px 5px 2px 2px;
+      border-radius: 2px;
+      background: currentColor;
+    }
+
+    .battery::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      right: -4px;
+      width: 2px;
+      height: 5px;
+      border-radius: 0 2px 2px 0;
+      background: currentColor;
+    }
+
+    .content {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow-y: auto;
+      padding: 0 16px 22px;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+    }
+
+    .screen::-webkit-scrollbar,
+    .x-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+      animation: screen-in 220ms var(--ease);
+    }
+
+    @keyframes screen-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .appbar {
+      position: sticky;
+      top: 0;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 62px;
+      margin: 0 -16px;
+      padding: 8px 16px 10px;
+      background: linear-gradient(180deg, rgba(5, 5, 8, .99) 0%, rgba(5, 5, 8, .96) 84%, rgba(5, 5, 8, 0) 100%);
+      backdrop-filter: blur(18px);
+    }
+
+    .appbar-title {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .appbar-title strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .appbar-title span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .icon-btn,
+    .square-btn {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: rgba(255, 255, 255, .045);
+      transition: background 180ms var(--ease), border-color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .icon-btn:active,
+    .square-btn:active,
+    .chip:active,
+    .poster-card:active,
+    .list-row:active {
+      transform: scale(.98);
+    }
+
+    .icon {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .home-top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 -16px 12px;
+      padding: 8px 16px 14px;
+      background: linear-gradient(180deg, rgba(5, 5, 8, .99) 0%, rgba(5, 5, 8, .97) 82%, rgba(5, 5, 8, 0) 100%);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+      font-weight: 850;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .searchbar {
+      min-width: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: rgba(255, 255, 255, .055);
+    }
+
+    .searchbar input {
+      min-width: 0;
+      flex: 1;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      background: transparent;
+      font-size: 15px;
+    }
+
+    .searchbar input::placeholder {
+      color: var(--muted);
+    }
+
+    .live-search-row {
+      display: grid;
+      grid-template-columns: 1fr 48px;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .section {
+      margin: 20px 0 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .section-head span,
+    .link-btn {
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .hero-card {
+      position: relative;
+      min-height: 154px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(90deg, rgba(5, 5, 8, .94), rgba(5, 5, 8, .66) 52%, rgba(5, 5, 8, .08)),
+        url("https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=900&q=80") center / cover;
+    }
+
+    .hero-card .copy {
+      width: 68%;
+      padding: 18px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 26px;
+      padding: 0 8px;
+      border: 1px solid rgba(225, 29, 72, .32);
+      border-radius: 999px;
+      color: #fecdd3;
+      background: var(--red-soft);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .hero-card h2 {
+      margin: 12px 0 8px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .hero-card p {
+      margin: 0;
+      color: rgba(248, 250, 252, .72);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .brief-card,
+    .panel,
+    .source-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .brief-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 13px;
+    }
+
+    .brief-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .brief-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .poster-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px 10px;
+      align-items: start;
+    }
+
+    .poster-card {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      padding: 0;
+      color: inherit;
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      transition: transform 180ms var(--ease);
+    }
+
+    .poster-art {
+      position: relative;
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      aspect-ratio: 2 / 3;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .poster-art img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .poster-badge {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      padding: 3px 6px;
+      border-radius: 999px;
+      color: white;
+      background: rgba(225, 29, 72, .94);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .poster-card h3 {
+      margin: 8px 0 0;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 750;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .poster-card p {
+      margin: 3px 0 0;
+      color: var(--dim);
+      font-size: 11px;
+    }
+
+    .load-state {
+      width: 100%;
+      height: 44px;
+      margin-top: 14px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed rgba(255, 255, 255, .14);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+    }
+
+    .x-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .category-shell {
+      position: sticky;
+      top: 62px;
+      z-index: 9;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 8px;
+      margin: 0 -16px 14px;
+      padding: 2px 16px 12px;
+      background: linear-gradient(180deg, rgba(5, 5, 8, .98), rgba(5, 5, 8, .94));
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    .home-top.search-only {
+      margin-bottom: 14px;
+      padding-top: 10px;
+      padding-bottom: 12px;
+    }
+
+    .home-top.search-only .searchbar {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .home-top.search-only .searchbar span {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .home-screen {
+      padding-top: 0;
+    }
+
+    .home-search {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 -16px 12px;
+      padding: 10px 16px 12px;
+      background: linear-gradient(180deg, rgba(5, 5, 8, .99) 0%, rgba(5, 5, 8, .97) 82%, rgba(5, 5, 8, 0) 100%);
+      backdrop-filter: blur(18px);
+    }
+
+    .home-search-btn {
+      width: 100%;
+      min-width: 0;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0 13px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .055);
+      text-align: left;
+      font-size: 15px;
+      font-weight: 650;
+      line-height: 1;
+    }
+
+    .home-search-btn span {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .home-list {
+      padding-top: 2px;
+    }
+
+    .chip {
+      min-height: 44px;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0 13px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .045);
+      font-size: 13px;
+      font-weight: 720;
+      transition: transform 180ms var(--ease), color 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+    }
+
+    .chip.active {
+      border-color: rgba(225, 29, 72, .62);
+      color: white;
+      background: var(--red);
+    }
+
+    .chip.small {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .list-row {
+      width: 100%;
+      min-height: 66px;
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .04);
+      text-align: left;
+      transition: transform 180ms var(--ease), background 180ms var(--ease);
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #fecdd3;
+      background: var(--red-soft);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .list-row h3 {
+      margin: 0;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .list-row p {
+      margin: 5px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .state-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #86efac;
+      font-size: 11px;
+      font-weight: 780;
+    }
+
+    .state-dot::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 14px currentColor;
+    }
+
+    .detail-head {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 13px;
+      align-items: start;
+    }
+
+    .detail-poster {
+      overflow: hidden;
+      aspect-ratio: 2 / 3;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .detail-poster img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .detail-info h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.18;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .meta span {
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .04);
+      font-size: 11px;
+      font-weight: 680;
+    }
+
+    .summary {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      color: rgba(248, 250, 252, .78);
+      font-size: 12px;
+      line-height: 1.55;
+      -webkit-line-clamp: 6;
+      -webkit-box-orient: vertical;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: var(--radius);
+      padding: 0 14px;
+      font-size: 14px;
+      font-weight: 780;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+    }
+
+    .primary-btn {
+      border: 1px solid rgba(225, 29, 72, .72);
+      color: white;
+      background: var(--red);
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(255, 255, 255, .055);
+    }
+
+    .primary-btn:active,
+    .secondary-btn:active {
+      transform: scale(.98);
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .episode-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .episode-btn {
+      min-width: 0;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: rgba(255, 255, 255, .045);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .episode-btn.active {
+      border-color: rgba(225, 29, 72, .68);
+      background: var(--red-soft);
+      color: #fecdd3;
+    }
+
+    .player-frame {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, .76)),
+        url("https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80") center / cover;
+    }
+
+    .player-frame.live {
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .78)),
+        url("https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?auto=format&fit=crop&w=900&q=80") center / cover;
+    }
+
+    .play-core {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 64px;
+      height: 64px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, .34);
+      border-radius: 999px;
+      color: white;
+      background: rgba(0, 0, 0, .44);
+      backdrop-filter: blur(12px);
+    }
+
+    .progress {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      height: 4px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .2);
+    }
+
+    .progress span {
+      display: block;
+      width: 42%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--red);
+    }
+
+    .url-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 44px;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .url-box {
+      min-width: 0;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0 11px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .045);
+      font-size: 12px;
+    }
+
+    .url-box span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .stat {
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px;
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--dim);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .control-grid.five {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .control-btn {
+      min-width: 0;
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: rgba(255, 255, 255, .055);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .online-hero {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(145deg, rgba(225, 29, 72, .18), transparent 56%),
+        rgba(255, 255, 255, .045);
+    }
+
+    .online-hero h2 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.2;
+    }
+
+    .online-hero p {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .form-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .input {
+      min-height: 48px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0 12px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .055);
+      font-size: 15px;
+    }
+
+    .setting-list {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .setting-row {
+      width: 100%;
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 11px;
+      color: var(--text);
+      background: transparent;
+      text-align: left;
+    }
+
+    .setting-row:last-child {
+      border-bottom: 0;
+    }
+
+    .setting-row h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .setting-row p {
+      margin: 4px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .setting-icon {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #fecdd3;
+      background: var(--red-soft);
+    }
+
+    .brief-page-card {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .brief-page-card h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .brief-page-card p,
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .source-panel {
+      padding: 12px;
+    }
+
+    .source-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .source-row:last-child {
+      border-bottom: 0;
+    }
+
+    .source-row strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .source-row span {
+      display: block;
+      margin-top: 4px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bottom-nav {
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: rgba(7, 8, 12, .96);
+      backdrop-filter: blur(22px);
+    }
+
+    .nav-btn {
+      min-width: 0;
+      min-height: 54px;
+      display: grid;
+      place-items: center;
+      gap: 3px;
+      border: 0;
+      border-radius: var(--radius);
+      color: var(--dim);
+      background: transparent;
+      font-size: 11px;
+      font-weight: 720;
+    }
+
+    .nav-btn.active {
+      color: white;
+      background: rgba(225, 29, 72, .16);
+    }
+
+    .nav-btn .icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .overlay,
+    .loader,
+    .sheet,
+    .toast,
+    .fullscreen-player {
+      position: absolute;
+      z-index: 100;
+    }
+
+    .overlay {
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, .58);
+      backdrop-filter: blur(10px);
+    }
+
+    .overlay.active {
+      display: flex;
+    }
+
+    .dialog {
+      width: min(100%, 330px);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: #10131b;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .62);
+      animation: dialog-in 180ms var(--ease);
+    }
+
+    @keyframes dialog-in {
+      from { opacity: 0; transform: translateY(14px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .dialog h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .dialog p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .loader {
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(0, 0, 0, .34);
+      backdrop-filter: blur(6px);
+    }
+
+    .loader.active {
+      display: grid;
+    }
+
+    .loader-card {
+      width: 132px;
+      min-height: 124px;
+      display: grid;
+      place-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: var(--radius);
+      background: rgba(16, 19, 27, .9);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .55);
+    }
+
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 3px solid rgba(255, 255, 255, .12);
+      border-top-color: var(--red);
+      animation: spin 820ms linear infinite;
+    }
+
+    .loader-card span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .sheet {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      padding: 12px 16px 18px;
+      border-top: 1px solid var(--line-strong);
+      border-radius: 16px 16px 0 0;
+      background: #10131b;
+      box-shadow: 0 -24px 80px rgba(0, 0, 0, .58);
+    }
+
+    .sheet.active {
+      display: block;
+      animation: sheet-in 220ms var(--ease);
+    }
+
+    @keyframes sheet-in {
+      from { transform: translateY(18px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sheet-handle {
+      width: 42px;
+      height: 4px;
+      margin: 0 auto 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .18);
+    }
+
+    .toast {
+      left: 50%;
+      bottom: 92px;
+      display: none;
+      min-height: 42px;
+      max-width: 84%;
+      align-items: center;
+      justify-content: center;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--text);
+      background: rgba(16, 19, 27, .94);
+      box-shadow: 0 14px 50px rgba(0, 0, 0, .44);
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-weight: 740;
+    }
+
+    .toast.active {
+      display: flex;
+      animation: toast-in 180ms var(--ease);
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .download-progress {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      margin-top: 12px;
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .download-progress span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--red);
+      transition: width 180ms var(--ease);
+    }
+
+    .fullscreen-player {
+      inset: 0;
+      display: none;
+      background: black;
+    }
+
+    .fullscreen-player.active {
+      display: block;
+    }
+
+    .full-media {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, .78), transparent 24%, rgba(0, 0, 0, .86)),
+        url("https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1200&q=80") center / cover;
+    }
+
+    .full-top {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .full-title {
+      min-width: 0;
+      flex: 1;
+      font-size: 15px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .gesture-layer {
+      position: absolute;
+      inset: 74px 0 120px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      pointer-events: none;
+    }
+
+    .gesture-zone {
+      display: grid;
+      place-items: center;
+      color: rgba(255, 255, 255, .44);
+      font-size: 42px;
+      font-weight: 300;
+    }
+
+    .full-bottom {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 20px;
+    }
+
+    .full-progress {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .22);
+    }
+
+    .full-progress span {
+      display: block;
+      width: 54%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--red);
+    }
+
+    .side-panel {
+      align-self: stretch;
+      max-height: min(930px, calc(100dvh - 36px));
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(8, 10, 15, .76);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .34);
+    }
+
+    .side-panel h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .side-panel p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .map {
+      display: grid;
+      gap: 8px;
+    }
+
+    .map button {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0 12px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .045);
+      text-align: left;
+      font-size: 13px;
+      font-weight: 720;
+    }
+
+    .map button.active {
+      border-color: rgba(225, 29, 72, .64);
+      background: var(--red-soft);
+    }
+
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .swatch {
+      height: 42px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: var(--radius);
+    }
+
+    .swatch:nth-child(1) { background: #000; }
+    .swatch:nth-child(2) { background: #0b0d12; }
+    .swatch:nth-child(3) { background: #e11d48; }
+    .swatch:nth-child(4) { background: #38bdf8; }
+
+    @media (max-width: 860px) {
+      body {
+        background: var(--shell);
+      }
+
+      .page {
+        display: block;
+        min-height: 100dvh;
+        padding: 0;
+      }
+
+      .phone {
+        width: 100vw;
+        height: 100dvh;
+        min-height: 100dvh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .side-panel {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="7"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+    <symbol id="i-tv" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1.2l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1-.2l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.8 1.8 0 0 0-1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.8 1.8 0 0 0 .4-2 1.8 1.8 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.8 1.8 0 0 0 1.6-1 1.8 1.8 0 0 0-.4-2l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.8 1.8 0 0 0 2 .4 1.8 1.8 0 0 0 1-1.6V3a2 2 0 0 1 4 0v.1a1.8 1.8 0 0 0 1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1H21a2 2 0 0 1 0 4h-.1a1.8 1.8 0 0 0-1.5 1Z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14"/><path d="M16 5v14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-cast" viewBox="0 0 24 24"><path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M2 12a8 8 0 0 1 8 8"/><path d="M2 16a4 4 0 0 1 4 4"/><path d="M2 20h.01"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.2 6.5"/><path d="M3 12A9 9 0 0 1 18.2 5.5"/><path d="M18 2v4h-4"/><path d="M6 22v-4h4"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  </svg>
+
+  <main class="page">
+    <section class="phone" aria-label="Liuguang 移动端原型">
+      <div class="app">
+        <div class="status">
+          <span>10:55</span>
+          <div class="status-icons">
+            <span class="signal"><span></span><span></span><span></span></span>
+            <span>5G</span>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <div class="content">
+          <section class="screen active home-screen" data-screen="home">
+            <div class="home-search">
+              <button class="home-search-btn" data-go="search" aria-label="搜索影视">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <span>搜索片名、演员、年份</span>
+              </button>
+            </div>
+            <div class="poster-grid home-list">
+              <button class="poster-card" data-go="detail">
+                <span class="poster-art"><img src="https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=360&q=80" alt="漫长的季节海报"><span class="poster-badge">9.4</span></span>
+                <h3>漫长的季节</h3><p>更新至 12 集</p>
+              </button>
+              <button class="poster-card" data-go="detail">
+                <span class="poster-art"><img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=360&q=80" alt="城市追影海报"><span class="poster-badge">8.7</span></span>
+                <h3>城市追影</h3><p>全 24 集</p>
+              </button>
+              <button class="poster-card" data-go="detail">
+                <span class="poster-art"><img src="https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=360&q=80" alt="夜航海报"><span class="poster-badge">8.9</span></span>
+                <h3>夜航</h3><p>更新至 6 集</p>
+              </button>
+              <button class="poster-card" data-go="detail">
+                <span class="poster-art"><img src="https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=360&q=80" alt="回声档案海报"><span class="poster-badge">8.5</span></span>
+                <h3>回声档案</h3><p>全 16 集</p>
+              </button>
+              <button class="poster-card" data-go="detail">
+                <span class="poster-art"><img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=360&q=80" alt="山海旧事海报"><span class="poster-badge">7.9</span></span>
+                <h3>山海旧事</h3><p>全 30 集</p>
+              </button>
+              <button class="poster-card" data-go="detail">
+                <span class="poster-art"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=360&q=80" alt="剧场海报"><span class="poster-badge">8.2</span></span>
+                <h3>剧场</h3><p>更新至 18 集</p>
+              </button>
+            </div>
+            <button class="load-state" data-action="loadmore">上滑到底后自动加载下一页</button>
+          </section>
+
+          <section class="screen" data-screen="search">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <label class="searchbar" aria-label="搜索关键词">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <input value="漫长的季节" />
+              </label>
+            </div>
+            <section class="section">
+              <div class="section-head"><h2>搜索结果</h2><span>16 条</span></div>
+              <div class="list">
+                <button class="list-row" data-go="detail"><span class="avatar">剧</span><span><h3>漫长的季节</h3><p>悬疑 · 2023 · 全 12 集</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+                <button class="list-row" data-go="detail"><span class="avatar">影</span><span><h3>季节回响</h3><p>剧情 · 2024 · 高清</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+                <button class="list-row" data-go="detail"><span class="avatar">综</span><span><h3>长夜访谈</h3><p>访谈 · 更新至 8 期</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+              </div>
+            </section>
+          </section>
+
+          <section class="screen" data-screen="detail">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>漫长的季节</strong><span>详情 · 剧集列表直接播放</span></div>
+            </div>
+            <div class="detail-head">
+              <div class="detail-poster"><img src="https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=420&q=80" alt="漫长的季节海报"></div>
+              <div class="detail-info">
+                <h2>漫长的季节</h2>
+                <div class="meta"><span>2023</span><span>悬疑</span><span>全 12 集</span><span>1080P</span></div>
+                <p class="summary">一座东北小城里，几个家庭跨越二十年的命运被一桩旧案重新牵动。详情页采用海报与信息并排，简介、基础信息、源与剧集都保留在当前页面。</p>
+                <div class="action-grid">
+                  <button class="primary-btn" data-go="videoPlayer"><svg class="icon"><use href="#i-play"/></svg>立即播放</button>
+                  <button class="secondary-btn" data-modal="sourceResult">检测源</button>
+                </div>
+              </div>
+            </div>
+
+            <section class="section">
+              <div class="section-head"><h2>播放源</h2><span>紧凑切换</span></div>
+              <div class="x-scroll">
+                <button class="chip active">线路 A</button><button class="chip">线路 B</button><button class="chip">线路 C</button><button class="chip">备用 1</button>
+              </div>
+            </section>
+            <section class="section">
+              <div class="section-head"><h2>播放线路</h2><span>无需下钻</span></div>
+              <div class="x-scroll">
+                <button class="chip active">高清</button><button class="chip">超清</button><button class="chip">极速</button><button class="chip">原画</button>
+              </div>
+            </section>
+            <section class="section">
+              <div class="section-head"><h2>剧集</h2><span>一行 5 个</span></div>
+              <div class="episode-grid">
+                <button class="episode-btn" data-go="videoPlayer">01</button><button class="episode-btn" data-go="videoPlayer">02</button><button class="episode-btn" data-go="videoPlayer">03</button><button class="episode-btn" data-go="videoPlayer">04</button><button class="episode-btn" data-go="videoPlayer">05</button>
+                <button class="episode-btn" data-go="videoPlayer">06</button><button class="episode-btn" data-go="videoPlayer">07</button><button class="episode-btn" data-go="videoPlayer">08</button><button class="episode-btn" data-go="videoPlayer">09</button><button class="episode-btn" data-go="videoPlayer">10</button>
+                <button class="episode-btn" data-go="videoPlayer">11</button><button class="episode-btn" data-go="videoPlayer">12</button><button class="episode-btn" data-go="videoPlayer">13</button><button class="episode-btn" data-go="videoPlayer">14</button><button class="episode-btn" data-go="videoPlayer">15</button>
+              </div>
+            </section>
+          </section>
+
+          <section class="screen" data-screen="videoPlayer">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>漫长的季节 · 第 1 集</strong><span>剧集播放</span></div>
+            </div>
+            <div class="player-frame">
+              <button class="play-core" aria-label="播放或暂停"><svg class="icon"><use href="#i-play"/></svg></button>
+              <div class="progress"><span></span></div>
+            </div>
+            <div class="url-row">
+              <div class="url-box"><span>https://v12.ppqrrs.com/wjv12/202510/23/0yCDy076wg84/video/index.m3u8</span></div>
+              <button class="icon-btn" data-copy="https://v12.ppqrrs.com/wjv12/202510/23/0yCDy076wg84/video/index.m3u8" aria-label="复制源地址"><svg class="icon"><use href="#i-copy"/></svg></button>
+            </div>
+            <div class="stats-grid">
+              <div class="stat"><span>分辨率</span><strong>1920×1080</strong></div>
+              <div class="stat"><span>码率</span><strong>4.8 Mbps</strong></div>
+              <div class="stat"><span>网速</span><strong>2.6 MB/s</strong></div>
+            </div>
+            <div class="control-grid">
+              <button class="control-btn">快退</button>
+              <button class="control-btn"><svg class="icon"><use href="#i-pause"/></svg></button>
+              <button class="control-btn">快进</button>
+            </div>
+            <div class="control-grid five">
+              <button class="control-btn"><svg class="icon"><use href="#i-cast"/></svg></button>
+              <button class="control-btn">1.0x</button>
+              <button class="control-btn">2.0x</button>
+              <button class="control-btn">4.0x</button>
+              <button class="control-btn" data-action="fullscreen"><svg class="icon"><use href="#i-full"/></svg></button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="live">
+            <div class="appbar">
+              <div class="live-search-row">
+                <label class="searchbar">
+                  <svg class="icon"><use href="#i-search"/></svg>
+                  <input placeholder="搜索频道" />
+                </label>
+                <button class="icon-btn" data-sheet="liveSourceSheet" aria-label="切换直播源"><svg class="icon"><use href="#i-link"/></svg></button>
+              </div>
+            </div>
+            <div class="category-shell">
+              <button class="chip active" data-sheet="liveSourceSheet">换源</button>
+              <div class="x-scroll">
+                <button class="chip active">全部</button><button class="chip">央视</button><button class="chip">卫视</button><button class="chip">体育</button><button class="chip">少儿</button><button class="chip">港澳台</button>
+              </div>
+            </div>
+            <div class="list">
+              <button class="list-row" data-go="livePlayer"><span class="avatar">C1</span><span><h3>CCTV-1 综合</h3><p>4 条线路 · 默认高清</p></span><span class="state-dot">直播中</span></button>
+              <button class="list-row" data-go="livePlayer"><span class="avatar">C5</span><span><h3>CCTV-5 体育</h3><p>3 条线路 · 自动容错</p></span><span class="state-dot">直播中</span></button>
+              <button class="list-row" data-go="livePlayer"><span class="avatar">HN</span><span><h3>湖南卫视</h3><p>2 条线路 · 高清</p></span><span class="state-dot">直播中</span></button>
+              <button class="list-row" data-go="livePlayer"><span class="avatar">JS</span><span><h3>江苏卫视</h3><p>2 条线路 · 超清</p></span><span class="state-dot">直播中</span></button>
+              <button class="list-row" data-go="livePlayer"><span class="avatar">GD</span><span><h3>广东体育</h3><p>备用源可切换</p></span><span class="state-dot">直播中</span></button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="livePlayer">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>CCTV-1 综合</strong><span>直播播放</span></div>
+            </div>
+            <div class="player-frame live">
+              <button class="play-core" aria-label="播放或暂停"><svg class="icon"><use href="#i-play"/></svg></button>
+              <div class="progress"><span style="width:100%"></span></div>
+            </div>
+            <div class="url-row">
+              <div class="url-box"><span>https://raw.githubusercontent.com/lonnnnnng/iptv-api/refs/heads/master/output/user_result.m3u</span></div>
+              <button class="icon-btn" data-copy="https://raw.githubusercontent.com/lonnnnnng/iptv-api/refs/heads/master/output/user_result.m3u" aria-label="复制直播源"><svg class="icon"><use href="#i-copy"/></svg></button>
+            </div>
+            <div class="stats-grid">
+              <div class="stat"><span>分辨率</span><strong>1280×720</strong></div>
+              <div class="stat"><span>码率</span><strong>3.1 Mbps</strong></div>
+              <div class="stat"><span>网速</span><strong>1.9 MB/s</strong></div>
+            </div>
+            <section class="section">
+              <div class="section-head"><h2>同名线路</h2><span>不可用时自动切换</span></div>
+              <div class="x-scroll">
+                <button class="chip active">线路 1</button><button class="chip">线路 2</button><button class="chip">线路 3</button><button class="chip">备用</button>
+              </div>
+            </section>
+            <div class="control-grid">
+              <button class="control-btn"><svg class="icon"><use href="#i-cast"/></svg></button>
+              <button class="control-btn"><svg class="icon"><use href="#i-pause"/></svg></button>
+              <button class="control-btn" data-action="fullscreen"><svg class="icon"><use href="#i-full"/></svg></button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="online">
+            <div class="appbar">
+              <div class="appbar-title"><strong>在线播放</strong><span>M3U8 / M3U 链接解析</span></div>
+            </div>
+            <div class="online-hero">
+              <h2>粘贴链接后直接播放</h2>
+              <p>支持单个 m3u8 视频链接，也支持 m3u 直播列表。检测到剪切板中存在可播放链接时，会自动填充到输入框。</p>
+            </div>
+            <div class="form-stack">
+              <input class="input" id="onlineUrl" value="https://v12.ppqrrs.com/wjv12/202510/23/0yCDy076wg84/video/index.m3u8" aria-label="播放链接">
+              <button class="primary-btn" data-action="parse">解析播放</button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="settings">
+            <div class="appbar">
+              <div class="appbar-title"><strong>设置</strong><span>版本、源、历史与应用状态</span></div>
+            </div>
+            <div class="setting-list">
+              <button class="setting-row" data-action="checkUpdate"><span class="setting-icon"><svg class="icon"><use href="#i-download"/></svg></span><span><h3>检测更新</h3><p>对比 GitHub Releases 最新版本</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+              <button class="setting-row" data-go="history"><span class="setting-icon"><svg class="icon"><use href="#i-play"/></svg></span><span><h3>播放历史</h3><p>继续上次观看</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+              <button class="setting-row" data-go="sourceManage"><span class="setting-icon"><svg class="icon"><use href="#i-link"/></svg></span><span><h3>视频源管理</h3><p>检测连通性、启用或停用</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+              <button class="setting-row" data-go="liveSourceManage"><span class="setting-icon"><svg class="icon"><use href="#i-tv"/></svg></span><span><h3>直播源管理</h3><p>M3U 地址、频道分组、线路容错</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+              <button class="setting-row" data-modal="resetDialog"><span class="setting-icon"><svg class="icon"><use href="#i-refresh"/></svg></span><span><h3>重置应用</h3><p>清空缓存和本地解析状态</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="brief">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>今日简报</strong><span>2026-05-28 10:55:29 星期四 UTC+8</span></div>
+              <button class="icon-btn" data-action="regenerate" aria-label="重新生成"><svg class="icon"><use href="#i-refresh"/></svg></button>
+            </div>
+            <div class="brief-page-card">
+              <h2>聚合日报</h2>
+              <p>今日新增影视 42 条，直播源解析 1,284 个频道。异常线路主要集中在境外体育频道，建议开启同名频道自动切换。</p>
+              <p>用户常用流程集中在首页搜索、详情页剧集直播、直播频道快速筛选和在线播放链接解析。</p>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="history">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>播放历史</strong><span>按最近播放排序</span></div>
+            </div>
+            <div class="list">
+              <button class="list-row" data-go="videoPlayer"><span class="avatar">01</span><span><h3>漫长的季节 · 第 1 集</h3><p>观看至 26:18</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+              <button class="list-row" data-go="livePlayer"><span class="avatar">C1</span><span><h3>CCTV-1 综合</h3><p>直播 · 线路 1</p></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="sourceManage">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>视频源管理</strong><span>接口连通性检测</span></div>
+            </div>
+            <div class="source-panel">
+              <div class="source-row"><span><strong>默认片库</strong><span>https://api.example.com/vod</span></span><button class="secondary-btn" data-modal="sourceResult">检测</button></div>
+              <div class="source-row"><span><strong>备用片库</strong><span>https://backup.example.com/vod</span></span><button class="secondary-btn" data-modal="sourceFail">检测</button></div>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="liveSourceManage">
+            <div class="appbar">
+              <button class="icon-btn" data-back aria-label="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="appbar-title"><strong>直播源管理</strong><span>M3U 连通性检测</span></div>
+            </div>
+            <div class="source-panel">
+              <div class="source-row"><span><strong>公开直播源</strong><span>https://raw.githubusercontent.com/lonnnnnng/iptv-api/refs/heads/master/output/user_result.m3u</span></span><button class="secondary-btn" data-modal="sourceResult">检测</button></div>
+              <div class="source-row"><span><strong>本地备用源</strong><span>http://192.168.1.2/live.m3u</span></span><button class="secondary-btn" data-modal="sourceFail">检测</button></div>
+            </div>
+          </section>
+
+          <div class="loader" id="loader" aria-live="polite">
+            <div class="loader-card"><div class="spinner"></div><span id="loaderText">正在加载</span></div>
+          </div>
+
+          <div class="overlay" id="updateDialog">
+            <div class="dialog">
+              <h2>发现新版本 v1.0.1</h2>
+              <p>当前版本 v1.0.0。更新内容：播放体验优化、音频聚合、源管理和公共加载组件优化。</p>
+              <div class="download-progress"><span id="downloadBar"></span></div>
+              <div class="dialog-actions">
+                <button class="secondary-btn" data-close>关闭</button>
+                <button class="primary-btn" data-action="download">下载更新</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="overlay" id="sourceResult">
+            <div class="dialog">
+              <h2>检测成功</h2>
+              <p>接口返回内容：code=200，响应 236ms，识别到 vod_name、vod_play_url、vod_pic 等必要字段。</p>
+              <div class="dialog-actions"><button class="secondary-btn" data-close>关闭</button><button class="primary-btn" data-close>知道了</button></div>
+            </div>
+          </div>
+
+          <div class="overlay" id="sourceFail">
+            <div class="dialog">
+              <h2>检测失败</h2>
+              <p>错误原因：网络连接超时。请检查地址是否可访问，或切换网络后重试。</p>
+              <div class="dialog-actions"><button class="secondary-btn" data-close>关闭</button><button class="primary-btn" data-close>重试</button></div>
+            </div>
+          </div>
+
+          <div class="overlay" id="resetDialog">
+            <div class="dialog">
+              <h2>确定重置应用吗</h2>
+              <p>会清空本地缓存、播放历史和临时解析状态，已保存的默认源不会被删除。</p>
+              <div class="dialog-actions"><button class="secondary-btn" data-close>取消</button><button class="primary-btn" data-close>确认</button></div>
+            </div>
+          </div>
+
+          <div class="sheet" id="liveSourceSheet">
+            <div class="sheet-handle"></div>
+            <div class="section-head"><h2>切换直播源</h2><button class="link-btn" data-close>关闭</button></div>
+            <div class="list">
+              <button class="list-row" data-close><span class="avatar">A</span><span><h3>公开直播源</h3><p>默认 · 1284 个频道</p></span><span class="state-dot">可用</span></button>
+              <button class="list-row" data-close><span class="avatar">B</span><span><h3>备用直播源</h3><p>国内节点 · 916 个频道</p></span><span class="state-dot">可用</span></button>
+            </div>
+          </div>
+
+          <div class="fullscreen-player" id="fullscreenPlayer">
+            <div class="full-media"></div>
+            <div class="full-top">
+              <button class="icon-btn" data-action="exitFullscreen" aria-label="退出全屏"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="full-title">漫长的季节 · 第 1 集</div>
+            </div>
+            <div class="gesture-layer">
+              <div class="gesture-zone">-10s</div>
+              <div class="gesture-zone">+10s</div>
+            </div>
+            <div class="full-bottom">
+              <div class="full-progress"><span></span></div>
+              <div class="control-grid">
+                <button class="control-btn">快退</button>
+                <button class="control-btn"><svg class="icon"><use href="#i-pause"/></svg></button>
+                <button class="control-btn">快进</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="toast" id="toast" role="status"></div>
+        </div>
+
+        <nav class="bottom-nav" aria-label="底部导航">
+          <button class="nav-btn active" data-tab="home"><svg class="icon"><use href="#i-home"/></svg><span>首页</span></button>
+          <button class="nav-btn" data-tab="live"><svg class="icon"><use href="#i-tv"/></svg><span>直播</span></button>
+          <button class="nav-btn" data-tab="online"><svg class="icon"><use href="#i-link"/></svg><span>在线</span></button>
+          <button class="nav-btn" data-tab="settings"><svg class="icon"><use href="#i-settings"/></svg><span>设置</span></button>
+        </nav>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <h2>Liuguang UI 重构原型</h2>
+      <p>当前方案把所有主要功能收敛为移动端深色应用壳：统一搜索栏、紧凑剧集、分离剧集播放和直播播放、在线链接解析、源检测、更新弹窗、全屏播放态。</p>
+      <div class="map" id="screenMap">
+        <button data-go="home" class="active">首页 <span>Home</span></button>
+        <button data-go="search">搜索结果 <span>Search</span></button>
+        <button data-go="detail">详情页 <span>Detail</span></button>
+        <button data-go="videoPlayer">剧集播放 <span>Video</span></button>
+        <button data-go="live">电视直播 <span>Live</span></button>
+        <button data-go="livePlayer">直播播放 <span>Live Player</span></button>
+        <button data-go="online">在线播放 <span>Online</span></button>
+        <button data-go="brief">今日简报 <span>Brief</span></button>
+        <button data-go="settings">设置 <span>Settings</span></button>
+        <button data-go="sourceManage">视频源管理 <span>Sources</span></button>
+      </div>
+      <div class="token-grid" aria-label="颜色令牌"><div class="swatch"></div><div class="swatch"></div><div class="swatch"></div><div class="swatch"></div></div>
+    </aside>
+  </main>
+
+  <script>
+    const screens = [...document.querySelectorAll(".screen")];
+    const navButtons = [...document.querySelectorAll(".nav-btn")];
+    const mapButtons = [...document.querySelectorAll("#screenMap [data-go]")];
+    const historyStack = ["home"];
+    const mainTabs = new Set(["home", "live", "online", "settings"]);
+    const loader = document.getElementById("loader");
+    const loaderText = document.getElementById("loaderText");
+    const toast = document.getElementById("toast");
+
+    function showScreen(name, push = true) {
+      screens.forEach((screen) => {
+        screen.classList.toggle("active", screen.dataset.screen === name);
+        if (screen.dataset.screen === name) screen.scrollTop = 0;
+      });
+      if (push && historyStack[historyStack.length - 1] !== name) historyStack.push(name);
+      navButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === name));
+      mapButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.go === name));
+    }
+
+    function goBack() {
+      if (historyStack.length > 1) {
+        historyStack.pop();
+        showScreen(historyStack[historyStack.length - 1], false);
+      } else {
+        openOverlay("resetDialog");
+        document.querySelector("#resetDialog h2").textContent = "确定要退出吗";
+        document.querySelector("#resetDialog p").textContent = "当前位于一级页面，再次确认后退出应用。";
+      }
+    }
+
+    function withLoading(text, done) {
+      loaderText.textContent = text;
+      loader.classList.add("active");
+      window.setTimeout(() => {
+        loader.classList.remove("active");
+        done?.();
+      }, 680);
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("active");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("active"), 1800);
+    }
+
+    function openOverlay(id) {
+      document.getElementById(id)?.classList.add("active");
+    }
+
+    function closeFloating() {
+      document.querySelectorAll(".overlay.active, .sheet.active").forEach((el) => el.classList.remove("active"));
+    }
+
+    document.addEventListener("click", async (event) => {
+      const go = event.target.closest("[data-go]");
+      const tab = event.target.closest("[data-tab]");
+      const back = event.target.closest("[data-back]");
+      const modal = event.target.closest("[data-modal]");
+      const sheet = event.target.closest("[data-sheet]");
+      const close = event.target.closest("[data-close]");
+      const action = event.target.closest("[data-action]");
+      const copy = event.target.closest("[data-copy]");
+
+      if (go) showScreen(go.dataset.go);
+      if (tab) {
+        historyStack.length = 0;
+        historyStack.push(tab.dataset.tab);
+        showScreen(tab.dataset.tab, false);
+      }
+      if (back) goBack();
+      if (modal) withLoading("正在检测", () => openOverlay(modal.dataset.modal));
+      if (sheet) document.getElementById(sheet.dataset.sheet)?.classList.add("active");
+      if (close) closeFloating();
+      if (copy) {
+        try {
+          await navigator.clipboard?.writeText(copy.dataset.copy);
+        } catch (error) {}
+        showToast("源地址已复制");
+      }
+      if (action) handleAction(action.dataset.action);
+    });
+
+    function handleAction(action) {
+      if (action === "refresh") withLoading("正在连接片库", () => showToast("首页内容已刷新"));
+      if (action === "loadmore") withLoading("正在加载更多", () => showToast("已追加下一页内容"));
+      if (action === "parse") {
+        const url = document.getElementById("onlineUrl").value.trim();
+        if (!url) return showToast("请输入播放链接");
+        withLoading("正在解析链接", () => showScreen(url.endsWith(".m3u") ? "livePlayer" : "videoPlayer"));
+      }
+      if (action === "checkUpdate") withLoading("正在检测更新", () => openOverlay("updateDialog"));
+      if (action === "download") {
+        const bar = document.getElementById("downloadBar");
+        let value = 0;
+        const timer = window.setInterval(() => {
+          value += 14;
+          bar.style.width = Math.min(value, 100) + "%";
+          if (value >= 100) {
+            window.clearInterval(timer);
+            showToast("下载完成，准备安装");
+          }
+        }, 180);
+      }
+      if (action === "regenerate") withLoading("正在重新聚合", () => showToast("今日简报已更新"));
+      if (action === "fullscreen") document.getElementById("fullscreenPlayer").classList.add("active");
+      if (action === "exitFullscreen") document.getElementById("fullscreenPlayer").classList.remove("active");
+    }
+
+    document.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const row = chip.parentElement;
+        if (!row) return;
+        row.querySelectorAll(".chip").forEach((item) => item.classList.remove("active"));
+        chip.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

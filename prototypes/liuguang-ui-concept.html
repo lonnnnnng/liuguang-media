@@ -1,0 +1,1430 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>流光 UI Concept</title>
+  <style>
+    :root {
+      --ink: #080b0c;
+      --panel: #111719;
+      --panel-2: #172022;
+      --line: rgba(236, 228, 207, .13);
+      --text: #f2ead7;
+      --muted: #a9aa9c;
+      --dim: #73766c;
+      --jade: #00d5a0;
+      --jade-soft: rgba(0, 213, 160, .14);
+      --amber: #ffb23f;
+      --red: #fa574d;
+      --paper: #f0eadb;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(255, 178, 63, .09), transparent 28%),
+        linear-gradient(225deg, rgba(0, 213, 160, .10), transparent 34%),
+        #070808;
+      font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      letter-spacing: 0;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .32;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 4px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 6px);
+      mix-blend-mode: overlay;
+    }
+
+    .stage {
+      width: min(100vw, 440px);
+      min-height: 100vh;
+      padding: 18px;
+      display: grid;
+      place-items: center;
+    }
+
+    .phone {
+      width: min(100%, 414px);
+      height: min(900px, calc(100vh - 36px));
+      min-height: 780px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(240, 234, 219, .16);
+      border-radius: 34px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.035), transparent 22%),
+        var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .status {
+      height: 42px;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      padding: 0 22px 8px;
+      color: rgba(242, 234, 215, .75);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .wifi {
+      width: 18px;
+      height: 12px;
+      border: 3px solid currentColor;
+      border-bottom: 0;
+      border-radius: 18px 18px 0 0;
+    }
+
+    .signal {
+      width: 16px;
+      height: 14px;
+      background: linear-gradient(to top right, transparent 49%, currentColor 50%);
+    }
+
+    .battery {
+      width: 18px;
+      height: 10px;
+      border: 2px solid currentColor;
+      border-radius: 3px;
+      position: relative;
+    }
+
+    .battery::after {
+      content: "";
+      position: absolute;
+      right: -5px;
+      top: 2px;
+      width: 3px;
+      height: 4px;
+      border-radius: 0 2px 2px 0;
+      background: currentColor;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0 18px 106px;
+      scrollbar-width: none;
+    }
+
+    .screen::-webkit-scrollbar {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+      animation: enter .42s cubic-bezier(.2, .8, .2, 1);
+    }
+
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 2px 18px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 3px;
+    }
+
+    .eyebrow {
+      color: var(--jade);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-family: "Songti SC", "Noto Serif SC", serif;
+      font-size: 31px;
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .icon-button {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      background: rgba(255,255,255,.04);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+      cursor: pointer;
+    }
+
+    .icon-button.compact {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+    }
+
+    .icon-button svg,
+    .nav-icon svg {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 214px;
+      overflow: hidden;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.11);
+      background:
+        linear-gradient(100deg, rgba(8,11,12,.96) 0%, rgba(8,11,12,.74) 48%, rgba(8,11,12,.12) 100%),
+        url("https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80") center / cover;
+      box-shadow: 0 18px 48px rgba(0,0,0,.34);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 78px;
+      background: linear-gradient(0deg, rgba(8,11,12,.82), transparent);
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      width: 64%;
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero-tag {
+      width: fit-content;
+      padding: 6px 9px;
+      border-radius: 999px;
+      color: #07100d;
+      background: var(--jade);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .hero h2 {
+      font-family: "Songti SC", "Noto Serif SC", serif;
+      font-size: 28px;
+      line-height: 1.08;
+      font-weight: 900;
+    }
+
+    .hero p {
+      color: rgba(242, 234, 215, .72);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .play-cta {
+      width: fit-content;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: #111;
+      background: var(--paper);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .play-dot {
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--jade);
+    }
+
+    .play-dot::before {
+      content: "";
+      margin-left: 2px;
+      border-left: 7px solid #04100c;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .home-sticky-head {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      margin: 0 -18px 12px;
+      padding: 0 18px 12px;
+      background:
+        linear-gradient(180deg, rgba(8,11,12,1) 0%, rgba(8,11,12,.98) 78%, rgba(8,11,12,.94) 100%);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 16px 34px rgba(0,0,0,.36);
+    }
+
+    .quick-search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.045);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .home-sticky-head .quick-search {
+      margin: 0 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(15, 20, 21, .94);
+      color: var(--muted);
+      font-size: 14px;
+      backdrop-filter: blur(16px);
+    }
+
+    .quick-search svg {
+      width: 19px;
+      height: 19px;
+      stroke: var(--jade);
+      stroke-width: 2.4;
+      fill: none;
+    }
+
+    .rail-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin: 22px 0 12px;
+    }
+
+    .home-sticky-head .rail-head {
+      margin: 0;
+    }
+
+    .rail-head h2 {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .rail-head span {
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .poster-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .poster {
+      min-width: 0;
+      animation: rise .5s both;
+      animation-delay: var(--delay, 0s);
+      cursor: pointer;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .poster-art {
+      position: relative;
+      aspect-ratio: 2 / 3;
+      overflow: hidden;
+      border-radius: 13px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 12px 28px rgba(0,0,0,.26);
+    }
+
+    .poster-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.92) contrast(1.05);
+    }
+
+    .score {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      padding: 3px 6px;
+      border-radius: 999px;
+      color: #0c0a05;
+      background: var(--amber);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .poster h3 {
+      padding-top: 8px;
+      font-size: 13px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .poster p {
+      color: var(--dim);
+      font-size: 11px;
+      padding-top: 3px;
+    }
+
+    .source-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .source-card {
+      padding: 14px;
+      min-height: 82px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(140deg, rgba(0,213,160,.10), transparent),
+        rgba(255,255,255,.04);
+      display: grid;
+      align-content: space-between;
+    }
+
+    .source-card strong {
+      font-size: 15px;
+    }
+
+    .source-card span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow: auto;
+      margin: 2px -18px 16px;
+      padding: 0 18px;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.035);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      color: #06100d;
+      background: var(--jade);
+      border-color: transparent;
+    }
+
+    .live-feature {
+      display: grid;
+      grid-template-columns: 84px 1fr auto;
+      align-items: center;
+      gap: 13px;
+      padding: 13px;
+      border-radius: 20px;
+      background:
+        linear-gradient(145deg, rgba(255,178,63,.13), transparent 62%),
+        var(--panel);
+      border: 1px solid rgba(255,255,255,.11);
+    }
+
+    .live-tile {
+      aspect-ratio: 16 / 10;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      color: #06100d;
+      background:
+        linear-gradient(150deg, var(--jade), #e8f0dc);
+      font-weight: 1000;
+      font-size: 18px;
+    }
+
+    .live-feature h2 {
+      font-size: 19px;
+    }
+
+    .live-feature p {
+      color: var(--muted);
+      font-size: 12px;
+      padding-top: 4px;
+    }
+
+    .small-play {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--paper);
+      cursor: pointer;
+    }
+
+    .small-play::before {
+      content: "";
+      margin-left: 3px;
+      border-left: 12px solid #0a0c0c;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+    }
+
+    .channel-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .channel {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.035);
+    }
+
+    .channel-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: var(--jade);
+      background: var(--jade-soft);
+      font-weight: 1000;
+      font-size: 12px;
+    }
+
+    .channel h3 {
+      font-size: 15px;
+    }
+
+    .channel p {
+      color: var(--dim);
+      font-size: 11px;
+      padding-top: 3px;
+    }
+
+    .live-badge {
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .player-visual {
+      margin-top: 8px;
+      height: 292px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 25px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        linear-gradient(180deg, rgba(8,11,12,.06), rgba(8,11,12,.9)),
+        url("https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=900&q=80") center / cover;
+    }
+
+    .player-visual::before {
+      content: "正在播放";
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      color: #070c0a;
+      background: var(--jade);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .big-play {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 74px;
+      height: 74px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(8,11,12,.54);
+      backdrop-filter: blur(12px);
+    }
+
+    .big-play::before {
+      content: "";
+      margin-left: 5px;
+      border-left: 22px solid var(--text);
+      border-top: 14px solid transparent;
+      border-bottom: 14px solid transparent;
+    }
+
+    .now-playing {
+      padding: 18px 2px 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .now-playing h2 {
+      font-family: "Songti SC", "Noto Serif SC", serif;
+      font-size: 29px;
+      line-height: 1.14;
+    }
+
+    .now-playing p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .progress {
+      height: 5px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.12);
+    }
+
+    .progress span {
+      display: block;
+      width: 46%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--jade);
+    }
+
+    .episode-row {
+      display: flex;
+      gap: 8px;
+      overflow: auto;
+      margin: 12px -18px 0;
+      padding: 0 18px;
+      scrollbar-width: none;
+    }
+
+    .episode-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .episode {
+      flex: 0 0 auto;
+      min-width: 58px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .episode.active {
+      color: #07100d;
+      background: var(--amber);
+      border-color: transparent;
+    }
+
+    .detail-shell {
+      display: grid;
+      gap: 18px;
+    }
+
+    .detail-hero {
+      position: relative;
+      min-height: 318px;
+      overflow: hidden;
+      border-radius: 25px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        linear-gradient(180deg, rgba(8,11,12,.12), rgba(8,11,12,.92) 78%),
+        url("https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=900&q=80") center / cover;
+      box-shadow: 0 20px 54px rgba(0,0,0,.36);
+    }
+
+    .detail-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(0,213,160,.18), transparent 38%),
+        linear-gradient(0deg, rgba(8,11,12,.96), transparent 45%);
+      pointer-events: none;
+    }
+
+    .detail-actions {
+      position: absolute;
+      z-index: 1;
+      left: 14px;
+      right: 14px;
+      top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .detail-copy {
+      position: absolute;
+      z-index: 1;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-copy h2 {
+      font-family: "Songti SC", "Noto Serif SC", serif;
+      font-size: 34px;
+      line-height: 1.03;
+      font-weight: 900;
+    }
+
+    .meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .meta-line span {
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: rgba(242,234,215,.82);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .detail-copy p,
+    .detail-note p {
+      color: rgba(242,234,215,.72);
+      font-size: 13px;
+      line-height: 1.62;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 46px;
+      gap: 10px;
+    }
+
+    .primary-action,
+    .ghost-action {
+      min-height: 46px;
+      border-radius: 16px;
+      border: 0;
+      font: inherit;
+      font-weight: 1000;
+      cursor: pointer;
+    }
+
+    .primary-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #07100d;
+      background: var(--jade);
+    }
+
+    .primary-action .play-dot {
+      width: 20px;
+      height: 20px;
+      background: rgba(7,16,13,.14);
+    }
+
+    .ghost-action {
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .ghost-action svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+    }
+
+    .detail-note {
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(140deg, rgba(255,178,63,.11), transparent),
+        rgba(255,255,255,.04);
+    }
+
+    .detail-note h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .source-pills {
+      display: flex;
+      gap: 8px;
+      overflow: auto;
+      margin: 0 -18px;
+      padding: 0 18px;
+      scrollbar-width: none;
+    }
+
+    .source-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .source-pill {
+      flex: 0 0 auto;
+      min-width: 116px;
+      padding: 12px;
+      border-radius: 17px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .source-pill strong,
+    .episode-tile strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .source-pill span,
+    .episode-tile span {
+      display: block;
+      color: var(--dim);
+      font-size: 11px;
+      padding-top: 4px;
+    }
+
+    .source-pill.active {
+      border-color: transparent;
+      background:
+        linear-gradient(140deg, rgba(0,213,160,.95), rgba(240,234,219,.92));
+      color: #07100d;
+    }
+
+    .source-pill.active strong,
+    .source-pill.active span {
+      color: #07100d;
+    }
+
+    .episode-summary {
+      display: grid;
+      grid-template-columns: 58px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 13px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      cursor: pointer;
+    }
+
+    .episode-count {
+      width: 58px;
+      height: 58px;
+      border-radius: 17px;
+      display: grid;
+      place-items: center;
+      color: #07100d;
+      background: var(--amber);
+      font-weight: 1000;
+      font-size: 18px;
+    }
+
+    .episode-summary h3 {
+      font-size: 16px;
+    }
+
+    .episode-summary p {
+      color: var(--dim);
+      font-size: 11px;
+      padding-top: 4px;
+    }
+
+    .episode-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+    }
+
+    .episode-tile {
+      min-height: 76px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      color: var(--text);
+      background: rgba(255,255,255,.04);
+      text-align: left;
+      padding: 11px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .episode-tile.active {
+      border-color: transparent;
+      background:
+        linear-gradient(150deg, rgba(255,178,63,.94), rgba(240,234,219,.94));
+    }
+
+    .episode-tile.active strong,
+    .episode-tile.active span {
+      color: #07100d;
+    }
+
+    .episode-tile.watched {
+      background:
+        linear-gradient(140deg, rgba(0,213,160,.12), rgba(255,255,255,.04));
+    }
+
+    .settings-card {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      background: rgba(255,255,255,.04);
+    }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 43px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .setting-row:last-child {
+      border-bottom: 0;
+    }
+
+    .setting-icon {
+      width: 43px;
+      height: 43px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      color: var(--jade);
+      background: var(--jade-soft);
+    }
+
+    .setting-icon svg {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+    }
+
+    .setting-row h3 {
+      font-size: 15px;
+    }
+
+    .setting-row p {
+      color: var(--dim);
+      font-size: 11px;
+      padding-top: 3px;
+    }
+
+    .arrow {
+      color: var(--muted);
+      font-size: 21px;
+    }
+
+    .nav {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 6;
+      height: 64px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(24, 29, 29, .98), rgba(13, 17, 17, .98));
+      box-shadow: 0 16px 46px rgba(0,0,0,.42);
+    }
+
+    .nav::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      left: -16px;
+      right: -16px;
+      top: -18px;
+      bottom: -16px;
+      background:
+        linear-gradient(180deg, rgba(8,11,12,.94) 0%, rgba(8,11,12,1) 38%, rgba(8,11,12,1) 100%);
+      border-top: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 -18px 36px rgba(0,0,0,.38);
+    }
+
+    .nav button {
+      position: relative;
+      z-index: 1;
+      border: 0;
+      height: 52px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: transparent;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .nav button.active {
+      color: #07100d;
+      background: var(--paper);
+    }
+
+    .nav button.active .nav-icon {
+      color: #07100d;
+    }
+
+    @media (max-width: 460px) {
+      .stage {
+        padding: 0;
+      }
+
+      .phone {
+        width: 100vw;
+        height: 100vh;
+        min-height: 100vh;
+        border: 0;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="phone" aria-label="流光 mobile concept">
+      <div class="app">
+        <div class="status">
+          <span>8:08</span>
+          <div class="status-icons" aria-hidden="true">
+            <span class="wifi"></span>
+            <span class="signal"></span>
+            <span class="battery"></span>
+          </div>
+        </div>
+
+        <section class="screen active" data-screen="home">
+          <div class="home-sticky-head">
+            <div class="quick-search">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+              <span>搜索电影、剧集、综艺、动漫</span>
+            </div>
+
+            <div class="rail-head">
+              <h2>最近更新</h2>
+              <span>全部 248</span>
+            </div>
+          </div>
+          <div class="poster-grid">
+            <article class="poster" data-open="detail" style="--delay:.03s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=360&q=80"><span class="score">9.1</span></div>
+              <h3>暗线追踪</h3><p>动作 · 更新至12</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.08s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1518929458119-e5bf444c30f4?auto=format&fit=crop&w=360&q=80"><span class="score">8.7</span></div>
+              <h3>海边旧梦</h3><p>剧情 · 蓝光</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.13s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=360&q=80"><span class="score">8.9</span></div>
+              <h3>午夜剧场</h3><p>悬疑 · 完结</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.18s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=360&q=80"><span class="score">9.0</span></div>
+              <h3>逆光航线</h3><p>科幻 · 更新至06</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.23s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=360&q=80"><span class="score">8.6</span></div>
+              <h3>胶片旅人</h3><p>纪录 · 蓝光</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.28s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=360&q=80"><span class="score">8.8</span></div>
+              <h3>银幕之后</h3><p>剧情 · 完结</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.33s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=360&q=80"><span class="score">9.2</span></div>
+              <h3>雾港来信</h3><p>悬疑 · 更新至18</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.38s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=360&q=80"><span class="score">8.5</span></div>
+              <h3>山野回声</h3><p>治愈 · 蓝光</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.43s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1514539079130-25950c84af65?auto=format&fit=crop&w=360&q=80"><span class="score">8.4</span></div>
+              <h3>星夜漫游</h3><p>动画 · 完结</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.48s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1497032205916-ac775f0649ae?auto=format&fit=crop&w=360&q=80"><span class="score">8.9</span></div>
+              <h3>城市边缘</h3><p>犯罪 · 更新至24</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.53s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=360&q=80"><span class="score">8.3</span></div>
+              <h3>远方车站</h3><p>爱情 · 蓝光</p>
+            </article>
+            <article class="poster" data-open="detail" style="--delay:.58s">
+              <div class="poster-art"><img alt="电影海报" src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=360&q=80"><span class="score">9.0</span></div>
+              <h3>时间档案</h3><p>科幻 · 完结</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="detail">
+          <div class="detail-shell">
+            <article class="detail-hero">
+              <div class="detail-actions">
+                <button class="icon-button compact" data-open="home" aria-label="返回首页">
+                  <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+                </button>
+                <button class="icon-button compact" aria-label="收藏">
+                  <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.4-9-9.2C1.5 8.2 3.8 5 7.3 5c2 0 3.5 1.1 4.7 2.7C13.2 6.1 14.7 5 16.7 5c3.5 0 5.8 3.2 4.3 6.8C19 16.6 12 21 12 21Z"></path></svg>
+                </button>
+              </div>
+              <div class="detail-copy">
+                <div class="meta-line">
+                  <span>9.1</span>
+                  <span>动作 / 犯罪</span>
+                  <span>更新至 12</span>
+                  <span>量子资源</span>
+                </div>
+                <h2>暗线追踪</h2>
+                <p>一桩跨城旧案牵出新的卧底名单，刑警队在真假线索之间抢时间。</p>
+                <div class="action-row">
+                  <button class="primary-action" data-open="player"><span class="play-dot"></span>从第 12 集继续</button>
+                  <button class="ghost-action" aria-label="下载">
+                    <svg viewBox="0 0 24 24"><path d="M12 4v11"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <div class="detail-note">
+              <h3>剧情简介</h3>
+              <p>城市电网失控的夜晚，一份被删改的审讯记录重新出现。主角必须在下一次交易前确认内鬼身份，同时保护唯一证人。</p>
+            </div>
+
+            <div>
+              <div class="rail-head">
+                <h2>播放源</h2>
+                <span>自动选择最快线路</span>
+              </div>
+              <div class="source-pills">
+                <button class="source-pill active"><strong>量子资源</strong><span>1080P · 延迟 126ms</span></button>
+                <button class="source-pill"><strong>非凡资源</strong><span>高清 · 延迟 183ms</span></button>
+                <button class="source-pill"><strong>备用线路</strong><span>720P · 可切换</span></button>
+              </div>
+            </div>
+
+            <article class="episode-summary" data-open="episodes" role="button" tabindex="0">
+              <span class="episode-count">18</span>
+              <div><h3>剧集列表</h3><p>已更新 18 集 · 最近看到第 12 集</p></div>
+              <span class="arrow">›</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="episodes">
+          <header class="topbar">
+            <button class="icon-button compact" data-open="detail" aria-label="返回详情">
+              <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+            </button>
+            <div class="brand">
+              <span class="eyebrow">Episode Shelf</span>
+              <h1>暗线追踪</h1>
+            </div>
+            <button class="icon-button compact" aria-label="筛选">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M7 12h10"></path><path d="M10 17h4"></path></svg>
+            </button>
+          </header>
+
+          <div class="tabs">
+            <button class="tab active">量子资源</button>
+            <button class="tab">非凡资源</button>
+            <button class="tab">正序</button>
+            <button class="tab">只看未播</button>
+          </div>
+
+          <div class="detail-note">
+            <h3>续播位置</h3>
+            <p>第 12 集播放到 23:18。点击任意集数会进入播放页，当前集用金色标记，已看过的集数有绿色底纹。</p>
+          </div>
+
+          <div class="rail-head">
+            <h2>全部剧集</h2>
+            <span>1-18</span>
+          </div>
+          <div class="episode-grid">
+            <button class="episode-tile watched" data-open="player"><strong>01</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>02</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>03</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>04</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>05</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>06</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>07</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>08</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>09</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>10</strong><span>已看完</span></button>
+            <button class="episode-tile watched" data-open="player"><strong>11</strong><span>已看完</span></button>
+            <button class="episode-tile active" data-open="player"><strong>12</strong><span>23:18</span></button>
+            <button class="episode-tile" data-open="player"><strong>13</strong><span>未播放</span></button>
+            <button class="episode-tile" data-open="player"><strong>14</strong><span>未播放</span></button>
+            <button class="episode-tile" data-open="player"><strong>15</strong><span>未播放</span></button>
+            <button class="episode-tile" data-open="player"><strong>16</strong><span>未播放</span></button>
+            <button class="episode-tile" data-open="player"><strong>17</strong><span>未播放</span></button>
+            <button class="episode-tile" data-open="player"><strong>18</strong><span>今日更新</span></button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="live">
+          <header class="topbar">
+            <div class="brand">
+              <span class="eyebrow">IPTV Live</span>
+              <h1>直播频道</h1>
+            </div>
+            <button class="icon-button" aria-label="搜索直播">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+            </button>
+          </header>
+
+          <div class="tabs">
+            <button class="tab active">央视</button>
+            <button class="tab">卫视</button>
+            <button class="tab">体育</button>
+            <button class="tab">电影</button>
+            <button class="tab">少儿</button>
+          </div>
+
+          <article class="live-feature">
+            <div class="live-tile">CCTV</div>
+            <div>
+              <h2>CCTV 1 综合</h2>
+              <p>央视频道 · m3u8 · 高清线路</p>
+            </div>
+            <button class="small-play" data-open="player" aria-label="播放 CCTV 1"></button>
+          </article>
+
+          <div class="rail-head">
+            <h2>频道列表</h2>
+            <span>128 个频道</span>
+          </div>
+          <div class="channel-list">
+            <article class="channel"><div class="channel-logo">1</div><div><h3>CCTV 1 综合</h3><p>央视频道 · m3u8</p></div><span class="live-badge">LIVE</span></article>
+            <article class="channel"><div class="channel-logo">2</div><div><h3>CCTV 2 财经</h3><p>央视频道 · m3u8</p></div><span class="live-badge">LIVE</span></article>
+            <article class="channel"><div class="channel-logo">5</div><div><h3>CCTV 5 体育</h3><p>体育赛事 · m3u8</p></div><span class="live-badge">LIVE</span></article>
+            <article class="channel"><div class="channel-logo">6</div><div><h3>CCTV 6 电影</h3><p>电影频道 · m3u8</p></div><span class="live-badge">LIVE</span></article>
+            <article class="channel"><div class="channel-logo">13</div><div><h3>CCTV 13 新闻</h3><p>新闻频道 · m3u8</p></div><span class="live-badge">LIVE</span></article>
+            <article class="channel"><div class="channel-logo">少</div><div><h3>CCTV 14 少儿</h3><p>少儿频道 · m3u8</p></div><span class="live-badge">LIVE</span></article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="player">
+          <header class="topbar">
+            <div class="brand">
+              <span class="eyebrow">Now Playing</span>
+              <h1>沉浸播放</h1>
+            </div>
+            <button class="icon-button" aria-label="投屏">
+              <svg viewBox="0 0 24 24"><path d="M5 17.5c1.8 0 3.2 1.4 3.2 3.2"></path><path d="M5 13.5c4 0 7.2 3.2 7.2 7.2"></path><path d="M5 5h14v10"></path><path d="M18 20.5h1a2 2 0 0 0 2-2V17"></path></svg>
+            </button>
+          </header>
+
+          <div class="player-visual">
+            <button class="big-play" aria-label="播放或暂停"></button>
+          </div>
+          <div class="now-playing">
+            <h2>暗线追踪 · 第 12 集</h2>
+            <p>上次看到 46%，自动记录播放进度。线路来自量子资源，支持倍速和后台画中画。</p>
+          </div>
+          <div class="progress"><span></span></div>
+          <div class="episode-row">
+            <button class="episode">01</button><button class="episode">02</button><button class="episode">03</button><button class="episode">04</button>
+            <button class="episode active">12</button><button class="episode">13</button><button class="episode">14</button><button class="episode">15</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="settings">
+          <header class="topbar">
+            <div class="brand">
+              <span class="eyebrow">Control Room</span>
+              <h1>设置</h1>
+            </div>
+            <button class="icon-button" aria-label="更多">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="18" r="1.5"></circle></svg>
+            </button>
+          </header>
+
+          <div class="settings-card">
+            <article class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5"></path><path d="M8 19V5"></path><path d="m12 8 7 4-7 4z"></path></svg></div>
+              <div><h3>播放历史</h3><p>继续观看、进度同步、最近播放</p></div>
+              <span class="arrow">›</span>
+            </article>
+            <article class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h10"></path></svg></div>
+              <div><h3>视频源管理</h3><p>资源站排序、检测、启用状态</p></div>
+              <span class="arrow">›</span>
+            </article>
+            <article class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"></rect><path d="m9 10 5 2-5 2z"></path></svg></div>
+              <div><h3>直播源管理</h3><p>M3U 源、频道解析、线路刷新</p></div>
+              <span class="arrow">›</span>
+            </article>
+          </div>
+
+          <div class="rail-head">
+            <h2>应用维护</h2>
+            <span>高级</span>
+          </div>
+          <div class="settings-card">
+            <article class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m9 10 .5 8"></path><path d="m15 10-.5 8"></path><path d="M6 6l1 15h10l1-15"></path></svg></div>
+              <div><h3>重置应用</h3><p>清除缓存、恢复默认数据源</p></div>
+              <span class="arrow">›</span>
+            </article>
+            <article class="setting-row">
+              <div class="setting-icon"><svg viewBox="0 0 24 24"><path d="M12 8v5"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 2.8 18a2 2 0 0 0 1.8 3h14.8a2 2 0 0 0 1.8-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg></div>
+              <div><h3>免责声明</h3><p>内容来源、播放责任、版权说明</p></div>
+              <span class="arrow">›</span>
+            </article>
+          </div>
+        </section>
+
+        <nav class="nav" aria-label="主导航">
+          <button class="active" data-nav="home" aria-label="首页">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"></path><path d="M6.5 10.5V20h11v-9.5"></path></svg></span>
+          </button>
+          <button data-nav="live" aria-label="直播">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="2"></rect><path d="m10 11 5 2-5 2z"></path><path d="m9 4 3 3 3-3"></path></svg></span>
+          </button>
+          <button data-nav="player" aria-label="播放">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 8 6 4-6 4z"></path></svg></span>
+          </button>
+          <button data-nav="settings" aria-label="设置">
+            <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.36a1.7 1.7 0 0 0-1 .92l-.03.08a2 2 0 0 1-3.78 0l-.03-.08a1.7 1.7 0 0 0-1-.92 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-.92-1l-.08-.03a2 2 0 0 1 0-3.78l.08-.03a1.7 1.7 0 0 0 .92-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64a1.7 1.7 0 0 0 1-.92l.03-.08a2 2 0 0 1 3.78 0l.03.08a1.7 1.7 0 0 0 1 .92 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9c0 .7.36 1.32.92 1.68l.08.03a2 2 0 0 1 0 3.78Z"></path></svg></span>
+          </button>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const screens = [...document.querySelectorAll(".screen")];
+    const navButtons = [...document.querySelectorAll("[data-nav]")];
+
+    function openScreen(name) {
+      screens.forEach((screen) => screen.classList.toggle("active", screen.dataset.screen === name));
+      navButtons.forEach((button) => button.classList.toggle("active", button.dataset.nav === name));
+    }
+
+    navButtons.forEach((button) => {
+      button.addEventListener("click", () => openScreen(button.dataset.nav));
+    });
+
+    document.querySelectorAll("[data-open]").forEach((button) => {
+      button.addEventListener("click", () => openScreen(button.dataset.open));
+    });
+  </script>
+</body>
+</html>

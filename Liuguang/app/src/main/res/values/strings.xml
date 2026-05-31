@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">流光</string>
+    <string name="audio_playback_channel_name">音频播放</string>
+</resources>

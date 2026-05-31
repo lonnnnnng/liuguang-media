@@ -1,0 +1,27 @@
+.DS_Store
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Local machine configuration
+local.properties
+.env
+.env.*
+
+# Gradle / Android build output
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Logs
+*.log
+
+# Packaged artifacts
+*.apk
+*.aab
+*.jks
+*.keystore
