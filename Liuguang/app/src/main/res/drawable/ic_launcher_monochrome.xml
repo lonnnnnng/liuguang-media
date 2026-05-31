@@ -6,56 +6,63 @@
     android:viewportHeight="108">
 
     <path
-        android:fillAlpha="0.72"
+        android:fillAlpha="0.96"
         android:fillColor="#FFFFFFFF"
-        android:pathData="M36,20H72C80.84,20 88,27.16 88,36V72C88,80.84 80.84,88 72,88H36C27.16,88 20,80.84 20,72V36C20,27.16 27.16,20 36,20Z" />
+        android:pathData="M34,18H74C82.28,18 89,24.72 89,33V73C89,81.28 82.28,88 74,88H34C25.72,88 19,81.28 19,73V33C19,24.72 25.72,18 34,18Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M34,28H70C77.18,28 83,33.82 83,41V65C83,72.18 77.18,78 70,78H34C26.82,78 21,72.18 21,65V41C21,33.82 26.82,28 34,28Z" />
+        android:pathData="M36,25H72C78.63,25 84,30.37 84,37V68C84,74.63 78.63,80 72,80H36C29.37,80 24,74.63 24,68V37C24,30.37 29.37,25 36,25Z" />
 
     <path
         android:fillAlpha="0.38"
         android:fillColor="#FFFFFFFF"
-        android:pathData="M21,58H83V65C83,72.18 77.18,78 70,78H34C26.82,78 21,72.18 21,65Z" />
+        android:pathData="M24,59H84V68C84,74.63 78.63,80 72,80H36C29.37,80 24,74.63 24,68Z" />
+
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="8"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M34,66C43.5,52.4 49.6,54.2 56.8,40.8C61.1,32.8 68.3,30.1 76,33.5" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M46,41.4C46,39.84 47.71,38.89 49.04,39.7L68.14,51.3C69.43,52.08 69.43,53.92 68.14,54.7L49.04,66.3C47.71,67.11 46,66.16 46,64.6Z" />
+        android:pathData="M49,42.1C49,40.42 50.83,39.38 52.27,40.25L69.74,50.74C71.14,51.58 71.14,53.62 69.74,54.46L52.27,64.95C50.83,65.82 49,64.78 49,63.1Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M35,63C35,61.9 35.9,61 37,61H39C40.1,61 41,61.9 41,63V70C41,71.1 40.1,72 39,72H37C35.9,72 35,71.1 35,70Z" />
+        android:pathData="M34,64C34,62.9 34.9,62 36,62H38C39.1,62 40,62.9 40,64V70C40,71.1 39.1,72 38,72H36C34.9,72 34,71.1 34,70Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M43,58C43,56.9 43.9,56 45,56H47C48.1,56 49,56.9 49,58V70C49,71.1 48.1,72 47,72H45C43.9,72 43,71.1 43,70Z" />
+        android:pathData="M42,59C42,57.9 42.9,57 44,57H46C47.1,57 48,57.9 48,59V70C48,71.1 47.1,72 46,72H44C42.9,72 42,71.1 42,70Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M51,62C51,60.9 51.9,60 53,60H55C56.1,60 57,60.9 57,62V70C57,71.1 56.1,72 55,72H53C51.9,72 51,71.1 51,70Z" />
+        android:pathData="M50,63C50,61.9 50.9,61 52,61H54C55.1,61 56,61.9 56,63V70C56,71.1 55.1,72 54,72H52C50.9,72 50,71.1 50,70Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M59,55C59,53.9 59.9,53 61,53H63C64.1,53 65,53.9 65,55V70C65,71.1 64.1,72 63,72H61C59.9,72 59,71.1 59,70Z" />
+        android:pathData="M58,56C58,54.9 58.9,54 60,54H62C63.1,54 64,54.9 64,56V70C64,71.1 63.1,72 62,72H60C58.9,72 58,71.1 58,70Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M82,24C84.21,24 86,25.79 86,28C86,30.21 84.21,32 82,32C79.79,32 78,30.21 78,28C78,25.79 79.79,24 82,24Z" />
+        android:pathData="M80,24C82.21,24 84,25.79 84,28C84,30.21 82.21,32 80,32C77.79,32 76,30.21 76,28C76,25.79 77.79,24 80,24Z" />
 
     <path
-        android:strokeAlpha="0.80"
+        android:strokeAlpha="0.88"
         android:strokeColor="#FFFFFFFF"
         android:strokeLineCap="round"
         android:strokeWidth="4"
         android:fillColor="@android:color/transparent"
-        android:pathData="M78,38C83.9,42.6 87,48.3 87,55" />
+        android:pathData="M77,38C82,42.4 85,48.2 85,55" />
 
     <path
-        android:strokeAlpha="0.60"
+        android:strokeAlpha="0.64"
         android:strokeColor="#FFFFFFFF"
         android:strokeLineCap="round"
         android:strokeWidth="3"
         android:fillColor="@android:color/transparent"
-        android:pathData="M84,33C91.4,39.2 95,46.5 95,55" />
+        android:pathData="M84,34C90.7,40.2 94,47.4 94,55" />
 </vector>
