@@ -178,6 +178,7 @@ https://api.github.com/repos/lonnnnnng/liuguang-media/releases/latest
 - [测试与验收文档](docs/testing-and-acceptance.md)
 - [发布与运维文档](docs/release-and-operations.md)
 - [开发指南](docs/development-guide.md)
+- [定制源文档](docs/sources/README.md)
 
 ## 注意事项
 
