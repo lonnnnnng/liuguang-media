@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -124,6 +125,11 @@ fun LiveSourceManagementScreen(
     if (showAddDialog) {
         SourceEditorDialog(
             title = "添加直播源",
+            description = "配置电视直播源地址，保存后会用于直播频道解析与播放。",
+            nameLabel = "直播源名称",
+            urlLabel = "播放列表地址",
+            urlPlaceholder = "https://example.com/live/playlist.m3u",
+            icon = Icons.Default.LiveTv,
             onDismiss = { showAddDialog = false },
             onConfirm = { name, url ->
                 viewModel.addSource(name, url)
@@ -137,6 +143,11 @@ fun LiveSourceManagementScreen(
             title = "编辑直播源",
             initialName = source.name,
             initialUrl = source.url,
+            description = "调整直播源名称或播放列表地址，频道列表会按新地址解析。",
+            nameLabel = "直播源名称",
+            urlLabel = "播放列表地址",
+            urlPlaceholder = "https://example.com/live/playlist.m3u",
+            icon = Icons.Default.LiveTv,
             onDismiss = { editingSource = null },
             onConfirm = { name, url ->
                 viewModel.updateSource(source.copy(name = name, url = url))

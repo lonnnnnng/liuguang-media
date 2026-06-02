@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -124,6 +125,11 @@ fun RadioSourceManagementScreen(
     if (showAddDialog) {
         SourceEditorDialog(
             title = "添加电台源",
+            description = "配置网络电台源地址，保存后会用于电台列表聚合与播放。",
+            nameLabel = "电台源名称",
+            urlLabel = "源地址",
+            urlPlaceholder = "https://example.com/radio/list.json",
+            icon = Icons.Default.Radio,
             onDismiss = { showAddDialog = false },
             onConfirm = { name, url ->
                 viewModel.addSource(name, url)
@@ -137,6 +143,11 @@ fun RadioSourceManagementScreen(
             title = "编辑电台源",
             initialName = source.name,
             initialUrl = source.url,
+            description = "调整电台源名称或地址，电台列表会按新地址刷新。",
+            nameLabel = "电台源名称",
+            urlLabel = "源地址",
+            urlPlaceholder = "https://example.com/radio/list.json",
+            icon = Icons.Default.Radio,
             onDismiss = { editingSource = null },
             onConfirm = { name, url ->
                 viewModel.updateSource(source.copy(name = name, url = url))

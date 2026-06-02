@@ -28,14 +28,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,8 +57,9 @@ import com.liuguang.media.data.local.entity.VideoSiteEntity
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.CinemaMessage
 import com.liuguang.media.ui.components.PageHeader
-import com.liuguang.media.ui.components.SourceEditorDialog
 import com.liuguang.media.ui.components.SourceCheckResultDialog
+import com.liuguang.media.ui.components.SourceEditorDialog
+import com.liuguang.media.ui.components.SourceUrlEditorDialog
 import com.liuguang.media.ui.theme.AppColors
 import com.liuguang.media.ui.theme.Dimens
 import java.text.SimpleDateFormat
@@ -215,6 +213,11 @@ fun SiteManagementScreen(
     if (showAddDialog) {
         SourceEditorDialog(
             title = "添加视频源",
+            description = "配置 MacCMS 视频接口，保存后会用于片库、搜索和详情解析。",
+            nameLabel = "视频源名称",
+            urlLabel = "接口地址",
+            urlPlaceholder = "https://example.com/api.php/provide/vod/",
+            icon = Icons.Default.VideoLibrary,
             onDismiss = { showAddDialog = false },
             onConfirm = { name, url ->
                 viewModel.addSite(name, url)
@@ -228,6 +231,11 @@ fun SiteManagementScreen(
             title = "编辑视频源",
             initialName = site.name,
             initialUrl = site.apiUrl,
+            description = "调整视频源名称或接口地址，不会影响已保存的其他源。",
+            nameLabel = "视频源名称",
+            urlLabel = "接口地址",
+            urlPlaceholder = "https://example.com/api.php/provide/vod/",
+            icon = Icons.Default.VideoLibrary,
             onDismiss = { editingSite = null },
             onConfirm = { name, url ->
                 viewModel.updateSite(site.copy(name = name, apiUrl = url))
@@ -653,69 +661,21 @@ private fun VideoSiteImportDialog(
 ) {
     var url by remember { mutableStateOf(DEFAULT_VIDEO_SITE_IMPORT_URL) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = AppColors.Surface,
-        titleContentColor = AppColors.TextPrimary,
-        textContentColor = AppColors.TextSecondary,
-        title = { Text("通过 URL 导入") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "支持 lite.json 视频源配置。导入时会读取每个源的 name 和 api 字段，并跳过已存在的接口地址。",
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    color = AppColors.TextSecondary
-                )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    label = { Text("配置地址") },
-                    placeholder = { Text(DEFAULT_VIDEO_SITE_IMPORT_URL) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    maxLines = 4,
-                    shape = RoundedCornerShape(4.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = AppColors.TextPrimary,
-                        unfocusedTextColor = AppColors.TextPrimary,
-                        focusedContainerColor = AppColors.SurfaceAlt,
-                        unfocusedContainerColor = AppColors.SurfaceAlt,
-                        focusedBorderColor = AppColors.Primary,
-                        unfocusedBorderColor = AppColors.Divider,
-                        cursorColor = AppColors.Primary,
-                        focusedLabelColor = AppColors.Primary,
-                        unfocusedLabelColor = AppColors.TextSecondary
-                    )
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(url) },
-                enabled = url.isNotBlank() && !isImporting,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary,
-                    contentColor = AppColors.OnPrimary,
-                    disabledContainerColor = AppColors.SurfaceRaised,
-                    disabledContentColor = AppColors.TextTertiary
-                )
-            ) {
-                if (isImporting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = AppColors.OnPrimary,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text("导入")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isImporting) {
-                Text("取消")
-            }
+    SourceUrlEditorDialog(
+        title = "导入视频源",
+        initialUrl = url,
+        description = "读取 lite.json 配置中的 name 和 api 字段，并自动跳过已存在地址。",
+        urlLabel = "配置地址",
+        urlPlaceholder = DEFAULT_VIDEO_SITE_IMPORT_URL,
+        helperText = "支持从远程 URL 导入视频源配置，长链接可直接粘贴。",
+        icon = Icons.Default.Link,
+        confirmText = "导入",
+        isConfirming = isImporting,
+        dismissEnabled = !isImporting,
+        onDismiss = onDismiss,
+        onConfirm = { value ->
+            url = value
+            onConfirm(value)
         }
     )
 }

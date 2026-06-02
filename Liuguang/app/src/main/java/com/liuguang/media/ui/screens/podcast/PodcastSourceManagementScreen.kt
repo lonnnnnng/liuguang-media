@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -143,6 +144,8 @@ fun PodcastSourceManagementScreen(
             description = "粘贴播客 RSS 或 Atom 订阅地址，添加后会自动解析节目列表。",
             urlLabel = "订阅地址",
             urlPlaceholder = "https://example.com/podcast/feed.xml",
+            helperText = "支持 RSS 或 Atom 订阅地址，保存后会同步节目和封面。",
+            icon = Icons.Default.RssFeed,
             onDismiss = { showAddDialog = false },
             onConfirm = { url ->
                 viewModel.addSubscription(url)
@@ -158,6 +161,8 @@ fun PodcastSourceManagementScreen(
             description = "修改订阅地址后会重新读取播客信息，并更新节目数量和封面。",
             urlLabel = "订阅地址",
             urlPlaceholder = "https://example.com/podcast/feed.xml",
+            helperText = "长链接可直接粘贴，保存后会按新地址刷新订阅。",
+            icon = Icons.Default.RssFeed,
             onDismiss = { editingSource = null },
             onConfirm = { url ->
                 viewModel.updateSubscription(source.copy(url = url))

@@ -1,12 +1,15 @@
 package com.liuguang.media.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.RssFeed
@@ -33,20 +36,25 @@ fun SourceEditorDialog(
     nameLabel: String = "源名称",
     urlLabel: String = "源地址",
     urlPlaceholder: String = "https://example.com/source",
+    icon: ImageVector = Icons.Default.Link,
     confirmText: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (name: String, url: String) -> Unit
 ) {
     var name by remember(initialName) { mutableStateOf(initialName) }
     var url by remember(initialUrl) { mutableStateOf(initialUrl) }
+    var nameTouched by remember(initialName) { mutableStateOf(false) }
+    var urlTouched by remember(initialUrl) { mutableStateOf(false) }
     val trimmedName = name.trim()
     val trimmedUrl = url.trim()
     val canConfirm = trimmedName.isNotBlank() && trimmedUrl.isNotBlank()
+    val nameError = if (nameTouched && trimmedName.isBlank()) "请输入源名称" else null
+    val urlError = if (urlTouched && trimmedUrl.isBlank()) "请输入源地址" else null
 
     SourceEditorFrame(
         title = title,
         description = description,
-        icon = Icons.Default.Link,
+        icon = icon,
         confirmText = confirmText ?: if (title.contains("添加")) "添加" else "保存",
         canConfirm = canConfirm,
         onDismiss = onDismiss,
@@ -54,23 +62,32 @@ fun SourceEditorDialog(
     ) {
         SourceTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = {
+                nameTouched = true
+                name = it
+            },
             label = nameLabel,
             placeholder = "例如：默认源",
             leadingIcon = Icons.Default.DriveFileRenameOutline,
-            singleLine = true
+            singleLine = true,
+            helperText = "用于在列表中快速识别这个源。",
+            errorText = nameError
         )
 
         SourceTextField(
             value = url,
-            onValueChange = { url = it },
+            onValueChange = {
+                urlTouched = true
+                url = it
+            },
             label = urlLabel,
             placeholder = urlPlaceholder,
             leadingIcon = Icons.Default.Link,
             minLines = 4,
             maxLines = 6,
             keyboardType = KeyboardType.Uri,
-            helperText = "支持粘贴长链接，可多行查看和编辑。"
+            helperText = "支持粘贴长链接，可多行查看和编辑。",
+            errorText = urlError
         )
     }
 }
@@ -82,32 +99,44 @@ fun SourceUrlEditorDialog(
     description: String = "填写订阅源地址，保存后会自动刷新源信息。",
     urlLabel: String = "源地址",
     urlPlaceholder: String = "https://example.com/feed.xml",
+    helperText: String = "支持 RSS 或 Atom 订阅地址，长链接可直接粘贴。",
+    icon: ImageVector = Icons.Default.RssFeed,
     confirmText: String? = null,
+    isConfirming: Boolean = false,
+    dismissEnabled: Boolean = true,
     onDismiss: () -> Unit,
     onConfirm: (url: String) -> Unit
 ) {
     var url by remember(initialUrl) { mutableStateOf(initialUrl) }
+    var urlTouched by remember(initialUrl) { mutableStateOf(false) }
     val trimmedUrl = url.trim()
+    val urlError = if (urlTouched && trimmedUrl.isBlank()) "请输入源地址" else null
 
     SourceEditorFrame(
         title = title,
         description = description,
-        icon = Icons.Default.RssFeed,
+        icon = icon,
         confirmText = confirmText ?: if (title.contains("添加")) "添加" else "保存",
-        canConfirm = trimmedUrl.isNotBlank(),
+        canConfirm = trimmedUrl.isNotBlank() && !isConfirming,
+        isConfirming = isConfirming,
+        dismissEnabled = dismissEnabled,
         onDismiss = onDismiss,
         onConfirm = { onConfirm(trimmedUrl) }
     ) {
         SourceTextField(
             value = url,
-            onValueChange = { url = it },
+            onValueChange = {
+                urlTouched = true
+                url = it
+            },
             label = urlLabel,
             placeholder = urlPlaceholder,
-            leadingIcon = Icons.Default.RssFeed,
+            leadingIcon = icon,
             minLines = 5,
             maxLines = 7,
             keyboardType = KeyboardType.Uri,
-            helperText = "支持 RSS 或 Atom 订阅地址，长链接可直接粘贴。"
+            helperText = helperText,
+            errorText = urlError
         )
     }
 }
@@ -119,43 +148,59 @@ private fun SourceEditorFrame(
     icon: ImageVector,
     confirmText: String,
     canConfirm: Boolean,
+    isConfirming: Boolean = false,
+    dismissEnabled: Boolean = true,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (dismissEnabled && !isConfirming) {
+                onDismiss()
+            }
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .heightIn(max = 640.dp),
+                .fillMaxWidth(0.93f)
+                .heightIn(max = 680.dp),
             color = AppColors.Surface,
             shape = RoundedCornerShape(8.dp),
             tonalElevation = 0.dp,
-            shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, AppColors.DividerStrong)
+            shadowElevation = 16.dp,
+            border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.16f))
         ) {
             Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(AppColors.Primary)
+                )
                 SourceEditorHeader(
                     title = title,
                     description = description,
-                    icon = icon
+                    icon = icon,
+                    dismissEnabled = dismissEnabled && !isConfirming,
+                    onDismiss = onDismiss
                 )
 
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                     content = content
                 )
 
                 SourceEditorActions(
                     confirmText = confirmText,
                     canConfirm = canConfirm,
+                    isConfirming = isConfirming,
+                    dismissEnabled = dismissEnabled,
                     onDismiss = onDismiss,
                     onConfirm = onConfirm
                 )
@@ -168,29 +213,32 @@ private fun SourceEditorFrame(
 private fun SourceEditorHeader(
     title: String,
     description: String,
-    icon: ImageVector
+    icon: ImageVector,
+    dismissEnabled: Boolean,
+    onDismiss: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = AppColors.Primary.copy(alpha = 0.08f),
+        color = AppColors.Surface,
         contentColor = AppColors.TextPrimary
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp),
+            modifier = Modifier.padding(start = 18.dp, top = 16.dp, end = 10.dp, bottom = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             Surface(
-                modifier = Modifier.size(42.dp),
-                color = AppColors.Primary,
+                modifier = Modifier.size(44.dp),
+                color = AppColors.PrimaryLight,
                 contentColor = AppColors.OnPrimary,
                 shape = RoundedCornerShape(8.dp),
-                shadowElevation = 1.dp
+                border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.20f))
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
+                        tint = AppColors.Primary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -198,17 +246,36 @@ private fun SourceEditorHeader(
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = title,
-                    color = AppColors.TextPrimary,
-                    fontSize = 19.sp,
-                    lineHeight = 23.sp,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        modifier = Modifier.weight(1f, fill = false),
+                        color = AppColors.TextPrimary,
+                        fontSize = 19.sp,
+                        lineHeight = 23.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Surface(
+                        color = AppColors.PrimaryLight,
+                        contentColor = AppColors.Primary,
+                        shape = RoundedCornerShape(999.dp)
+                    ) {
+                        Text(
+                            text = "必填",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            fontSize = 10.sp,
+                            lineHeight = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
                 Text(
                     text = description,
                     color = AppColors.TextSecondary,
@@ -216,6 +283,18 @@ private fun SourceEditorHeader(
                     lineHeight = 17.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+            IconButton(
+                onClick = onDismiss,
+                enabled = dismissEnabled,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "关闭",
+                    tint = if (dismissEnabled) AppColors.TextSecondary else AppColors.TextTertiary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -233,43 +312,76 @@ private fun SourceTextField(
     minLines: Int = 1,
     maxLines: Int = 1,
     keyboardType: KeyboardType = KeyboardType.Text,
-    helperText: String? = null
+    helperText: String? = null,
+    errorText: String? = null
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        placeholder = {
+    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = placeholder,
-                maxLines = if (singleLine) 1 else 2,
-                overflow = TextOverflow.Ellipsis
+                text = label,
+                color = AppColors.TextPrimary,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Bold
             )
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = leadingIcon,
-                contentDescription = null,
-                tint = AppColors.TextTertiary
+            Text(
+                text = "*",
+                color = AppColors.Error,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Black
             )
-        },
-        supportingText = helperText?.let { text ->
-            { Text(text, color = AppColors.TextTertiary, fontSize = 11.sp, lineHeight = 14.sp) }
-        },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = singleLine,
-        minLines = minLines,
-        maxLines = maxLines,
-        shape = RoundedCornerShape(8.dp),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        colors = editorTextFieldColors()
-    )
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = AppColors.TextTertiary,
+                    maxLines = if (singleLine) 1 else 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            supportingText = {
+                val text = errorText ?: helperText
+                if (text != null) {
+                    Text(
+                        text = text,
+                        color = if (errorText != null) AppColors.Error else AppColors.TextTertiary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = singleLine,
+            minLines = minLines,
+            maxLines = maxLines,
+            isError = errorText != null,
+            shape = RoundedCornerShape(8.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            colors = editorTextFieldColors()
+        )
+    }
 }
 
 @Composable
 private fun SourceEditorActions(
     confirmText: String,
     canConfirm: Boolean,
+    isConfirming: Boolean,
+    dismissEnabled: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -279,28 +391,30 @@ private fun SourceEditorActions(
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OutlinedButton(
                 onClick = onDismiss,
+                enabled = dismissEnabled && !isConfirming,
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp),
+                    .height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 border = BorderStroke(1.dp, AppColors.DividerStrong),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = AppColors.TextSecondary
+                    contentColor = AppColors.TextSecondary,
+                    disabledContentColor = AppColors.TextTertiary
                 )
             ) {
                 Text("取消", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
             Button(
                 onClick = onConfirm,
-                enabled = canConfirm,
+                enabled = canConfirm && !isConfirming,
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp),
+                    .height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.Primary,
@@ -309,6 +423,21 @@ private fun SourceEditorActions(
                     disabledContentColor = AppColors.TextTertiary
                 )
             ) {
+                if (isConfirming) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = AppColors.OnPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
                 Text(confirmText, fontSize = 14.sp, fontWeight = FontWeight.Black)
             }
         }
@@ -321,9 +450,15 @@ private fun editorTextFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedTextColor = AppColors.TextPrimary,
     focusedContainerColor = AppColors.SurfaceAlt,
     unfocusedContainerColor = AppColors.SurfaceAlt,
+    errorContainerColor = AppColors.SurfaceAlt,
     focusedBorderColor = AppColors.Primary,
     unfocusedBorderColor = AppColors.Divider,
+    errorBorderColor = AppColors.Error,
     cursorColor = AppColors.Primary,
     focusedLabelColor = AppColors.Primary,
-    unfocusedLabelColor = AppColors.TextSecondary
+    unfocusedLabelColor = AppColors.TextSecondary,
+    focusedLeadingIconColor = AppColors.Primary,
+    unfocusedLeadingIconColor = AppColors.TextTertiary,
+    errorLeadingIconColor = AppColors.Error,
+    errorSupportingTextColor = AppColors.Error
 )
