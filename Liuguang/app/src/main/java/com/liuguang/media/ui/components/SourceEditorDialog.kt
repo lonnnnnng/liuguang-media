@@ -104,6 +104,8 @@ fun SourceUrlEditorDialog(
     confirmText: String? = null,
     isConfirming: Boolean = false,
     dismissEnabled: Boolean = true,
+    topContent: (@Composable ColumnScope.() -> Unit)? = null,
+    bottomContent: (@Composable ColumnScope.() -> Unit)? = null,
     onDismiss: () -> Unit,
     onConfirm: (url: String) -> Unit
 ) {
@@ -123,6 +125,7 @@ fun SourceUrlEditorDialog(
         onDismiss = onDismiss,
         onConfirm = { onConfirm(trimmedUrl) }
     ) {
+        topContent?.invoke(this)
         SourceTextField(
             value = url,
             onValueChange = {
@@ -138,6 +141,7 @@ fun SourceUrlEditorDialog(
             helperText = helperText,
             errorText = urlError
         )
+        bottomContent?.invoke(this)
     }
 }
 

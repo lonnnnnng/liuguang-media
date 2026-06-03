@@ -2,12 +2,14 @@ package com.liuguang.media.ui.screens.podcast
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,8 +18,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material3.AlertDialog
@@ -28,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +72,22 @@ fun PodcastSourceManagementScreen(
     var editingSource by remember { mutableStateOf<PodcastSubscriptionEntity?>(null) }
     var deletingSource by remember { mutableStateOf<PodcastSubscriptionEntity?>(null) }
     val isBusy = uiState.isRefreshingSubscriptions || uiState.isRefreshingSubscriptionId != null || uiState.isAdding
+
+    LaunchedEffect(uiState.isAdding, uiState.message, showAddDialog) {
+        if (showAddDialog && !uiState.isAdding && uiState.message?.startsWith("已订阅") == true) {
+            showAddDialog = false
+        }
+    }
+
+    LaunchedEffect(uiState.isRefreshingSubscriptionId, uiState.message, editingSource) {
+        if (
+            editingSource != null &&
+            uiState.isRefreshingSubscriptionId == null &&
+            uiState.message?.startsWith("已更新") == true
+        ) {
+            editingSource = null
+        }
+    }
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -138,35 +159,25 @@ fun PodcastSourceManagementScreen(
     }
 
     if (showAddDialog) {
-        SourceUrlEditorDialog(
+        PodcastSourceEditorDialog(
             title = "添加播客源",
             initialUrl = "",
-            description = "粘贴播客 RSS 或 Atom 订阅地址，添加后会自动解析节目列表。",
-            urlLabel = "订阅地址",
-            urlPlaceholder = "https://example.com/podcast/feed.xml",
-            helperText = "支持 RSS 或 Atom 订阅地址，保存后会同步节目和封面。",
-            icon = Icons.Default.RssFeed,
+            source = null,
+            isConfirming = uiState.isAdding,
             onDismiss = { showAddDialog = false },
-            onConfirm = { url ->
-                viewModel.addSubscription(url)
-                showAddDialog = false
-            }
+            onConfirm = viewModel::addSubscription
         )
     }
 
     editingSource?.let { source ->
-        SourceUrlEditorDialog(
+        PodcastSourceEditorDialog(
             title = "编辑播客源",
             initialUrl = source.url,
-            description = "修改订阅地址后会重新读取播客信息，并更新节目数量和封面。",
-            urlLabel = "订阅地址",
-            urlPlaceholder = "https://example.com/podcast/feed.xml",
-            helperText = "长链接可直接粘贴，保存后会按新地址刷新订阅。",
-            icon = Icons.Default.RssFeed,
+            source = source,
+            isConfirming = uiState.isRefreshingSubscriptionId == source.id,
             onDismiss = { editingSource = null },
             onConfirm = { url ->
                 viewModel.updateSubscription(source.copy(url = url))
-                editingSource = null
             }
         )
     }
@@ -209,6 +220,203 @@ fun PodcastSourceManagementScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun PodcastSourceEditorDialog(
+    title: String,
+    initialUrl: String,
+    source: PodcastSubscriptionEntity?,
+    isConfirming: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    SourceUrlEditorDialog(
+        title = title,
+        initialUrl = initialUrl,
+        description = if (source == null) {
+            "添加公开可访问的订阅地址，流光会自动解析节目、封面和更新信息。"
+        } else {
+            "修改后会按新地址重新同步播客信息，并保留源列表中的管理入口。"
+        },
+        urlLabel = "Feed 地址",
+        urlPlaceholder = "https://example.com/podcast/feed.xml",
+        helperText = "支持 RSS / Atom。长链接可粘贴后多行编辑。",
+        icon = Icons.Default.RssFeed,
+        confirmText = if (source == null) "添加并同步" else "保存并刷新",
+        isConfirming = isConfirming,
+        dismissEnabled = !isConfirming,
+        topContent = {
+            PodcastEditorGuideCard()
+        },
+        bottomContent = {
+            source?.let { PodcastEditorCurrentCard(it) }
+        },
+        onDismiss = onDismiss,
+        onConfirm = onConfirm
+    )
+}
+
+@Composable
+private fun PodcastEditorGuideCard() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = AppColors.PrimaryLight,
+        contentColor = AppColors.TextPrimary,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.16f))
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(36.dp),
+                    color = AppColors.Surface,
+                    contentColor = AppColors.Primary,
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.14f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.RssFeed,
+                            contentDescription = null,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "播客订阅源",
+                        color = AppColors.TextPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = "保存后会同步标题、封面和最新节目。",
+                        color = AppColors.TextSecondary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                PodcastFormatChip("RSS")
+                PodcastFormatChip("Atom")
+                PodcastFormatChip("音频附件")
+            }
+        }
+    }
+}
+
+@Composable
+private fun PodcastEditorCurrentCard(source: PodcastSubscriptionEntity) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = AppColors.SurfaceAlt,
+        contentColor = AppColors.TextPrimary,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, AppColors.Divider)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "当前订阅",
+                    color = AppColors.TextPrimary,
+                    fontSize = 13.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    text = "${source.episodeCount} 期",
+                    color = AppColors.Primary,
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+            Text(
+                text = source.title,
+                color = AppColors.TextPrimary,
+                fontSize = 13.sp,
+                lineHeight = 17.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Link,
+                    contentDescription = null,
+                    tint = AppColors.TextTertiary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = source.url,
+                    modifier = Modifier.weight(1f),
+                    color = AppColors.TextSecondary,
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (source.lastRefreshTime > 0L) {
+                Text(
+                    text = "上次同步 ${formatRefreshTime(source.lastRefreshTime)}",
+                    color = AppColors.TextTertiary,
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PodcastFormatChip(text: String) {
+    Surface(
+        color = AppColors.Surface,
+        contentColor = AppColors.Primary,
+        shape = RoundedCornerShape(999.dp),
+        border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.18f))
+    ) {
+        Row(
+            modifier = Modifier
+                .height(26.dp)
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = text,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
