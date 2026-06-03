@@ -2,9 +2,11 @@ package com.liuguang.media.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -83,8 +86,8 @@ fun SourceEditorDialog(
             label = urlLabel,
             placeholder = urlPlaceholder,
             leadingIcon = Icons.Default.Link,
-            minLines = 4,
-            maxLines = 6,
+            minLines = 1,
+            maxLines = 3,
             keyboardType = KeyboardType.Uri,
             helperText = "支持粘贴长链接，可多行查看和编辑。",
             errorText = urlError
@@ -135,8 +138,8 @@ fun SourceUrlEditorDialog(
             label = urlLabel,
             placeholder = urlPlaceholder,
             leadingIcon = icon,
-            minLines = 5,
-            maxLines = 7,
+            minLines = 3,
+            maxLines = 5,
             keyboardType = KeyboardType.Uri,
             helperText = helperText,
             errorText = urlError
@@ -204,12 +207,6 @@ private fun SourceEditorFrame(
             border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.16f))
         ) {
             Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .background(AppColors.Primary)
-                )
                 SourceEditorHeader(
                     title = title,
                     description = description,
@@ -346,7 +343,22 @@ private fun SourceTextField(
     helperText: String? = null,
     errorText: String? = null
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+    val fieldHeight = when {
+        singleLine -> 32.dp
+        minLines <= 1 -> 52.dp
+        minLines == 2 -> 68.dp
+        else -> 84.dp
+    }
+    val supportText = errorText ?: helperText
+    val shape = RoundedCornerShape(8.dp)
+    val borderColor = if (errorText != null) AppColors.Error else AppColors.Divider
+    val textStyle = LocalTextStyle.current.copy(
+        color = AppColors.TextPrimary,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -366,44 +378,62 @@ private fun SourceTextField(
                 fontWeight = FontWeight.Black
             )
         }
-        OutlinedTextField(
+        BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    color = AppColors.TextTertiary,
-                    maxLines = if (singleLine) 1 else 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = leadingIcon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            supportingText = {
-                val text = errorText ?: helperText
-                if (text != null) {
-                    Text(
-                        text = text,
-                        color = if (errorText != null) AppColors.Error else AppColors.TextTertiary,
-                        fontSize = 10.5.sp,
-                        lineHeight = 14.sp
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(fieldHeight)
+                .background(AppColors.SurfaceAlt, shape)
+                .border(BorderStroke(1.dp, borderColor), shape),
+            textStyle = textStyle,
             singleLine = singleLine,
             minLines = minLines,
             maxLines = maxLines,
-            isError = errorText != null,
-            shape = RoundedCornerShape(8.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            colors = editorTextFieldColors()
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = if (singleLine) ImeAction.Next else ImeAction.Default
+            ),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(AppColors.Primary),
+            decorationBox = { innerTextField ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 10.dp, vertical = if (singleLine) 6.dp else 7.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
+                ) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = AppColors.TextTertiary,
+                    modifier = Modifier.size(18.dp)
+                )
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (value.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                color = AppColors.TextTertiary,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                maxLines = if (singleLine) 1 else minLines,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            }
         )
+        if (supportText != null) {
+            Text(
+                text = supportText,
+                modifier = Modifier.padding(start = 42.dp),
+                color = if (errorText != null) AppColors.Error else AppColors.TextTertiary,
+                fontSize = 9.5.sp,
+                lineHeight = 12.sp
+            )
+        }
     }
 }
 
