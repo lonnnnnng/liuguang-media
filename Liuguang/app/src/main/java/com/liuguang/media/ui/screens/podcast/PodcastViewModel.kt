@@ -3,19 +3,32 @@ package com.liuguang.media.ui.screens.podcast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.liuguang.media.data.local.entity.PodcastSubscriptionEntity
+import com.liuguang.media.data.repository.PodcastSourceCheckResponse
 import com.liuguang.media.data.repository.PodcastRepository
+import com.liuguang.media.data.repository.classifySourceCheckFailure
+import com.liuguang.media.data.repository.sourceCheckFailureMessage
+import com.liuguang.media.data.repository.sourceCheckReturnedContent
 import com.liuguang.media.domain.model.PodcastFeed
 import com.liuguang.media.domain.model.PodcastLibraryEpisode
+import com.liuguang.media.ui.components.SourceBatchUiState
+import com.liuguang.media.ui.components.SourceCheckResultDialogState
+import com.liuguang.media.ui.components.SourceCheckSummaryItem
+import com.liuguang.media.ui.components.SourceImportUiState
+import com.liuguang.media.ui.components.parseNamedSourceLines
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -43,6 +56,21 @@ class PodcastViewModel @Inject constructor(
 
     val subscriptions = podcastRepository.observeSubscriptions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _checkingSubscriptionId = MutableStateFlow<Long?>(null)
+    val checkingSubscriptionId: StateFlow<Long?> = _checkingSubscriptionId.asStateFlow()
+
+    private val _batchCheckingSubscriptionIds = MutableStateFlow<Set<Long>>(emptySet())
+    val batchCheckingSubscriptionIds: StateFlow<Set<Long>> = _batchCheckingSubscriptionIds.asStateFlow()
+
+    private val _checkResultDialog = MutableStateFlow<SourceCheckResultDialogState?>(null)
+    val checkResultDialog: StateFlow<SourceCheckResultDialogState?> = _checkResultDialog.asStateFlow()
+
+    private val _importUiState = MutableStateFlow(SourceImportUiState())
+    val importUiState: StateFlow<SourceImportUiState> = _importUiState.asStateFlow()
+
+    private val _batchUiState = MutableStateFlow(SourceBatchUiState())
+    val batchUiState: StateFlow<SourceBatchUiState> = _batchUiState.asStateFlow()
 
     private var hasLoadedLibrary = false
 
@@ -95,6 +123,49 @@ class PodcastViewModel @Inject constructor(
                         message = error.message ?: "播客源更新失败"
                     )
                 }
+            )
+        }
+    }
+
+    fun importSubscriptions(rawText: String) {
+        if (_importUiState.value.isImporting || _batchUiState.value.isRunning) return
+
+        val parsedUrls = parseNamedSourceLines(rawText, "播客源").map { it.second }
+        if (parsedUrls.isEmpty()) {
+            _importUiState.value = SourceImportUiState(message = "未识别到有效播客源")
+            return
+        }
+
+        viewModelScope.launch {
+            _importUiState.value = SourceImportUiState(isImporting = true, message = null)
+            val existingUrls = podcastRepository.getAllSubscriptions()
+                .map { it.url.normalizeSourceUrl() }
+                .toSet()
+            val urls = parsedUrls
+                .filterNot { it.normalizeSourceUrl() in existingUrls }
+                .distinctBy { it.normalizeSourceUrl() }
+
+            val successCount = AtomicInteger(0)
+            val failedCount = AtomicInteger(0)
+            val semaphore = Semaphore(PODCAST_REFRESH_PARALLELISM)
+            coroutineScope {
+                urls.map { url ->
+                    async(Dispatchers.IO) {
+                        semaphore.withPermit {
+                            podcastRepository.addSubscription(url).fold(
+                                onSuccess = { successCount.incrementAndGet() },
+                                onFailure = { failedCount.incrementAndGet() }
+                            )
+                        }
+                    }
+                }.awaitAll()
+            }
+            loadLibraryEpisodes().onSuccess { episodes ->
+                _uiState.value = _uiState.value.copy(libraryEpisodes = episodes)
+            }
+            _importUiState.value = SourceImportUiState(
+                isImporting = false,
+                message = "新增 ${successCount.get()} 个，失败 ${failedCount.get()} 个，跳过重复 ${parsedUrls.size - urls.size} 个"
             )
         }
     }
@@ -170,6 +241,153 @@ class PodcastViewModel @Inject constructor(
                     isRefreshingSubscriptionId = null,
                     message = error.message ?: "播客源刷新失败"
                 )
+            }
+        }
+    }
+
+    fun toggleSubscriptionEnabled(subscription: PodcastSubscriptionEntity) {
+        viewModelScope.launch {
+            podcastRepository.updateSubscriptionRaw(subscription.copy(enabled = !subscription.enabled))
+            loadLibraryEpisodes().onSuccess { episodes ->
+                _uiState.value = _uiState.value.copy(libraryEpisodes = episodes)
+            }
+        }
+    }
+
+    fun moveSubscriptionUp(subscription: PodcastSubscriptionEntity) {
+        viewModelScope.launch {
+            podcastRepository.moveSubscriptionUp(subscription, subscriptions.value)
+        }
+    }
+
+    fun moveSubscriptionDown(subscription: PodcastSubscriptionEntity) {
+        viewModelScope.launch {
+            podcastRepository.moveSubscriptionDown(subscription, subscriptions.value)
+        }
+    }
+
+    fun clearAllSubscriptions() {
+        if (_checkingSubscriptionId.value != null || _batchUiState.value.isRunning) return
+
+        viewModelScope.launch {
+            podcastRepository.clearAllSubscriptions()
+            _uiState.value = _uiState.value.copy(
+                selectedSubscriptionId = null,
+                selectedFeed = null,
+                libraryEpisodes = emptyList(),
+                selectedSourceId = null,
+                message = "已清空播客源"
+            )
+        }
+    }
+
+    fun checkSubscription(subscription: PodcastSubscriptionEntity) {
+        if (_checkingSubscriptionId.value != null || _batchUiState.value.isRunning) return
+
+        viewModelScope.launch {
+            _checkingSubscriptionId.value = subscription.id
+            try {
+                podcastRepository.checkPodcastSource(subscription.url).fold(
+                    onSuccess = { response ->
+                        val now = System.currentTimeMillis()
+                        val refreshed = subscription.copy(
+                            title = response.feed.title,
+                            description = response.feed.description,
+                            imageUrl = response.feed.imageUrl,
+                            link = response.feed.link,
+                            episodeCount = response.feed.episodes.size,
+                            lastRefreshTime = now,
+                            enabled = true,
+                            lastCheckStatus = "可用",
+                            lastCheckTime = now
+                        )
+                        podcastRepository.updateSubscriptionRaw(refreshed)
+                        _checkResultDialog.value = buildSuccessDialog(refreshed, response)
+                    },
+                    onFailure = { error ->
+                        val reason = classifySourceCheckFailure(error)
+                        podcastRepository.updateSubscriptionRaw(
+                            subscription.copy(
+                                lastCheckStatus = reason.statusText,
+                                lastCheckTime = System.currentTimeMillis()
+                            )
+                        )
+                        _checkResultDialog.value = SourceCheckResultDialogState(
+                            title = "播客源检测失败",
+                            sourceName = subscription.title,
+                            success = false,
+                            message = "${reason.label}：${sourceCheckFailureMessage(reason, error)}",
+                            summary = listOf(
+                                SourceCheckSummaryItem("检测地址", subscription.url),
+                                SourceCheckSummaryItem("失败分类", reason.label)
+                            ),
+                            returnedContent = sourceCheckReturnedContent(error)?.toDialogContent()
+                        )
+                    }
+                )
+            } finally {
+                _checkingSubscriptionId.value = null
+            }
+        }
+    }
+
+    fun batchCheckSubscriptions() {
+        if (_checkingSubscriptionId.value != null || _batchUiState.value.isRunning) return
+
+        viewModelScope.launch {
+            val currentSubscriptions = podcastRepository.getAllSubscriptions()
+            if (currentSubscriptions.isEmpty()) return@launch
+
+            val completedCount = AtomicInteger(0)
+            val successCount = AtomicInteger(0)
+            val failedCount = AtomicInteger(0)
+            val semaphore = Semaphore(PODCAST_REFRESH_PARALLELISM)
+
+            _batchUiState.value = SourceBatchUiState(
+                isRunning = true,
+                total = currentSubscriptions.size,
+                message = "并行检测 ${currentSubscriptions.size} 个播客源"
+            )
+
+            try {
+                coroutineScope {
+                    currentSubscriptions.map { subscription ->
+                        async(Dispatchers.IO) {
+                            semaphore.withPermit {
+                                _batchCheckingSubscriptionIds.update { it + subscription.id }
+                                try {
+                                    val checked = checkSubscriptionForBatch(subscription)
+                                    podcastRepository.updateSubscriptionRaw(checked)
+                                    val completed = completedCount.incrementAndGet()
+                                    if (checked.lastCheckStatus == "可用") {
+                                        successCount.incrementAndGet()
+                                    } else {
+                                        failedCount.incrementAndGet()
+                                    }
+                                    _batchUiState.value = SourceBatchUiState(
+                                        isRunning = true,
+                                        currentIndex = completed,
+                                        total = currentSubscriptions.size,
+                                        message = "刚完成：${subscription.title}"
+                                    )
+                                } finally {
+                                    _batchCheckingSubscriptionIds.update { it - subscription.id }
+                                }
+                            }
+                        }
+                    }.awaitAll()
+                }
+                loadLibraryEpisodes().onSuccess { episodes ->
+                    _uiState.value = _uiState.value.copy(libraryEpisodes = episodes)
+                }
+                _batchUiState.value = SourceBatchUiState(
+                    isRunning = false,
+                    currentIndex = currentSubscriptions.size,
+                    total = currentSubscriptions.size,
+                    message = "批量检测完成：可用 ${successCount.get()} 个，异常 ${failedCount.get()} 个"
+                )
+            } finally {
+                _batchCheckingSubscriptionIds.value = emptySet()
             }
         }
     }
@@ -269,7 +487,90 @@ class PodcastViewModel @Inject constructor(
         }
     }
 
+    fun dismissCheckResultDialog() {
+        _checkResultDialog.value = null
+    }
+
+    fun consumeImportMessage() {
+        _importUiState.value = _importUiState.value.copy(message = null)
+    }
+
+    fun consumeBatchMessage() {
+        _batchUiState.value = _batchUiState.value.copy(message = null)
+    }
+
     private suspend fun loadLibraryEpisodes() = podcastRepository.fetchLibraryEpisodes()
+
+    private fun buildSuccessDialog(
+        subscription: PodcastSubscriptionEntity,
+        response: PodcastSourceCheckResponse
+    ): SourceCheckResultDialogState {
+        val sampleEpisodes = response.feed.episodes
+            .take(6)
+            .joinToString("、") { it.title }
+            .ifBlank { "无" }
+        val audioTypes = response.feed.episodes
+            .map { it.audioType.ifBlank { "audio" } }
+            .distinct()
+            .take(6)
+            .joinToString("、")
+            .ifBlank { "未知" }
+
+        return SourceCheckResultDialogState(
+            title = "播客源检测成功",
+            sourceName = subscription.title,
+            success = true,
+            message = "订阅源可访问，返回内容已成功解析出节目。",
+            summary = listOf(
+                SourceCheckSummaryItem("检测地址", subscription.url),
+                SourceCheckSummaryItem("HTTP 状态", response.httpCode.toString()),
+                SourceCheckSummaryItem("内容类型", response.contentType ?: "未知"),
+                SourceCheckSummaryItem("节目数量", response.feed.episodes.size.toString()),
+                SourceCheckSummaryItem("音频格式", audioTypes),
+                SourceCheckSummaryItem("检测延迟", "${response.latencyMs} ms"),
+                SourceCheckSummaryItem("样例节目", sampleEpisodes)
+            ),
+            returnedContent = response.rawContent.toDialogContent()
+        )
+    }
+
+    private suspend fun checkSubscriptionForBatch(subscription: PodcastSubscriptionEntity): PodcastSubscriptionEntity {
+        val result = podcastRepository.checkPodcastSource(subscription.url)
+        return result.fold(
+            onSuccess = { response ->
+                val now = System.currentTimeMillis()
+                subscription.copy(
+                    title = response.feed.title,
+                    description = response.feed.description,
+                    imageUrl = response.feed.imageUrl,
+                    link = response.feed.link,
+                    episodeCount = response.feed.episodes.size,
+                    lastRefreshTime = now,
+                    enabled = true,
+                    lastCheckStatus = "可用",
+                    lastCheckTime = now
+                )
+            },
+            onFailure = { error ->
+                val status = if (error is TimeoutCancellationException) {
+                    "超时"
+                } else {
+                    classifySourceCheckFailure(error).statusText
+                }
+                subscription.copy(
+                    lastCheckStatus = status,
+                    lastCheckTime = System.currentTimeMillis()
+                )
+            }
+        )
+    }
+
+    private fun String.toDialogContent(maxLength: Int = 4000): String {
+        if (length <= maxLength) return this
+        return take(maxLength) + "\n\n...返回内容较长，仅展示前 ${maxLength} 字。"
+    }
+
+    private fun String.normalizeSourceUrl(): String = trim().trimEnd('/')
 
     private companion object {
         const val PODCAST_REFRESH_PARALLELISM = 4

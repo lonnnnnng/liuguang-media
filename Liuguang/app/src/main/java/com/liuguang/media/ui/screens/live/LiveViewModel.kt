@@ -49,8 +49,18 @@ class LiveViewModel @Inject constructor(
         viewModelScope.launch {
             sources.collectLatest { sourceList ->
                 val enabledSources = sourceList.filter { it.enabled }
-                if (enabledSources.isNotEmpty() && _currentSourceId.value == null) {
-                    selectSource(enabledSources.first().id)
+                when {
+                    enabledSources.isEmpty() -> {
+                        loadChannelsJob?.cancel()
+                        filterJob?.cancel()
+                        _currentSourceId.value = null
+                        allChannels = emptyList()
+                        allGroups = emptyList()
+                        _uiState.value = LiveUiState.Empty
+                    }
+                    _currentSourceId.value == null || enabledSources.none { it.id == _currentSourceId.value } -> {
+                        selectSource(enabledSources.first().id)
+                    }
                 }
             }
         }

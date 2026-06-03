@@ -17,6 +17,9 @@ interface PodcastSubscriptionDao {
     @Query("SELECT * FROM podcast_subscriptions ORDER BY sortOrder ASC, id ASC")
     suspend fun getAll(): List<PodcastSubscriptionEntity>
 
+    @Query("SELECT * FROM podcast_subscriptions WHERE enabled = 1 ORDER BY sortOrder ASC, id ASC")
+    suspend fun getEnabled(): List<PodcastSubscriptionEntity>
+
     @Query("SELECT * FROM podcast_subscriptions WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): PodcastSubscriptionEntity?
 
@@ -29,9 +32,18 @@ interface PodcastSubscriptionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(subscription: PodcastSubscriptionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(subscriptions: List<PodcastSubscriptionEntity>): List<Long>
+
     @Update
     suspend fun update(subscription: PodcastSubscriptionEntity)
 
+    @Update
+    suspend fun updateAll(subscriptions: List<PodcastSubscriptionEntity>)
+
     @Delete
     suspend fun delete(subscription: PodcastSubscriptionEntity)
+
+    @Query("DELETE FROM podcast_subscriptions")
+    suspend fun clearAll()
 }

@@ -1,22 +1,17 @@
 package com.liuguang.media.ui.screens.sitemanagement
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,9 +25,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,13 +47,18 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.liuguang.media.data.local.entity.VideoSiteEntity
 import com.liuguang.media.ui.components.CinemaBackground
-import com.liuguang.media.ui.components.CinemaMessage
 import com.liuguang.media.ui.components.PageHeader
 import com.liuguang.media.ui.components.SourceCheckResultDialog
+import com.liuguang.media.ui.components.SourceCompactEnabledSwitch
 import com.liuguang.media.ui.components.SourceEditorDialog
+import com.liuguang.media.ui.components.SourceManagementEmptyState
+import com.liuguang.media.ui.components.SourceManagementIconButton
+import com.liuguang.media.ui.components.SourceManagementMeta
+import com.liuguang.media.ui.components.SourceManagementStatusBanner
+import com.liuguang.media.ui.components.SourceManagementTopActionButton
+import com.liuguang.media.ui.components.SourcePrimaryActionButton
 import com.liuguang.media.ui.components.SourceUrlEditorDialog
 import com.liuguang.media.ui.theme.AppColors
-import com.liuguang.media.ui.theme.Dimens
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -93,54 +90,32 @@ fun SiteManagementScreen(
                 title = "视频源管理",
                 onBackClick = onNavigateBack,
                 actions = {
-                    IconButton(
-                        onClick = { showImportDialog = true },
-                        enabled = !isBusy
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Link,
-                            contentDescription = "URL导入",
-                            tint = if (!isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                        )
-                    }
-                    IconButton(
-                        onClick = viewModel::batchCheckSites,
-                        enabled = sites.isNotEmpty() && !isBusy
-                    ) {
-                        if (batchCheckUiState.isChecking) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = AppColors.Primary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "批量检测",
-                                tint = if (sites.isNotEmpty() && !isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                            )
-                        }
-                    }
-                    IconButton(
-                        onClick = { showAddDialog = true },
-                        enabled = !isBusy
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "添加",
-                            tint = if (!isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                        )
-                    }
-                    IconButton(
-                        onClick = { showClearDialog = true },
-                        enabled = sites.isNotEmpty() && !isBusy
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "清空",
-                            tint = if (sites.isNotEmpty() && !isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                        )
-                    }
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Add,
+                        contentDescription = "单个新增视频源",
+                        enabled = !isBusy,
+                        onClick = { showAddDialog = true }
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Link,
+                        contentDescription = "批量导入视频源",
+                        enabled = !isBusy,
+                        isLoading = importUiState.isImporting,
+                        onClick = { showImportDialog = true }
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.CheckCircle,
+                        contentDescription = "批量测试连通性",
+                        enabled = sites.isNotEmpty() && !isBusy,
+                        isLoading = batchCheckUiState.isChecking,
+                        onClick = viewModel::batchCheckSites
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Delete,
+                        contentDescription = "批量删除视频源",
+                        enabled = sites.isNotEmpty() && !isBusy,
+                        onClick = { showClearDialog = true }
+                    )
                 }
             )
 
@@ -148,7 +123,7 @@ fun SiteManagementScreen(
                 "${it.message.orEmpty()} (${it.currentIndex}/${it.total})"
             } ?: batchCheckUiState.message ?: importUiState.message
             statusMessage?.let { message ->
-                ManagementStatusBanner(
+                SourceManagementStatusBanner(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -161,12 +136,16 @@ fun SiteManagementScreen(
             }
 
             if (sites.isEmpty()) {
-                CinemaMessage(
+                SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = if (isBusy) "正在处理视频源" else "暂无视频源",
                     message = "添加资源站接口后，首页和搜索会自动使用启用的源。",
-                    actionText = if (isBusy) null else "添加视频源",
-                    onAction = if (isBusy) null else ({ showAddDialog = true })
+                    icon = Icons.Default.VideoLibrary,
+                    primaryActionText = "单个新增",
+                    onPrimaryAction = { showAddDialog = true },
+                    secondaryActionText = "批量导入",
+                    onSecondaryAction = { showImportDialog = true },
+                    actionsEnabled = !isBusy
                 )
             } else {
                 LazyColumn(
@@ -333,7 +312,7 @@ private fun SiteItem(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SitePrimaryActionButton(
+                    SourcePrimaryActionButton(
                         icon = if (site.isDefault) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = if (site.isDefault) "默认源" else "设为默认源",
                         enabled = actionsEnabled && !site.isDefault,
@@ -341,7 +320,7 @@ private fun SiteItem(
                         activeTint = Color(0xFFFACC15),
                         onClick = onSetDefault
                     )
-                    SitePrimaryActionButton(
+                    SourcePrimaryActionButton(
                         icon = Icons.Default.CheckCircle,
                         contentDescription = "检测",
                         enabled = isCheckEnabled || isChecking,
@@ -350,7 +329,7 @@ private fun SiteItem(
                     )
                 }
                 Spacer(modifier = Modifier.width(6.dp))
-                CompactEnabledSwitch(
+                SourceCompactEnabledSwitch(
                     checked = site.enabled,
                     onToggle = onToggleEnabled,
                     enabled = actionsEnabled
@@ -362,31 +341,32 @@ private fun SiteItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SiteCheckMeta(
-                    site = site,
+                SourceManagementMeta(
+                    text = siteCheckMetaText(site),
                     modifier = Modifier.weight(1f),
-                    isChecking = isChecking
+                    isLoading = isChecking,
+                    loadingText = "检测中"
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                    ManagementIconButton(
+                    SourceManagementIconButton(
                         icon = Icons.Default.ArrowUpward,
                         contentDescription = "上移",
                         enabled = actionsEnabled && canMoveUp,
                         onClick = onMoveUp
                     )
-                    ManagementIconButton(
+                    SourceManagementIconButton(
                         icon = Icons.Default.ArrowDownward,
                         contentDescription = "下移",
                         enabled = actionsEnabled && canMoveDown,
                         onClick = onMoveDown
                     )
-                    ManagementIconButton(
+                    SourceManagementIconButton(
                         icon = Icons.Default.Edit,
                         contentDescription = "编辑",
                         enabled = actionsEnabled,
                         onClick = onEdit
                     )
-                    ManagementIconButton(
+                    SourceManagementIconButton(
                         icon = Icons.Default.Delete,
                         contentDescription = "删除",
                         enabled = actionsEnabled,
@@ -394,147 +374,6 @@ private fun SiteItem(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CompactEnabledSwitch(
-    checked: Boolean,
-    onToggle: () -> Unit,
-    enabled: Boolean
-) {
-    val trackColor = when {
-        !enabled -> AppColors.SurfaceRaised
-        checked -> AppColors.Primary
-        else -> AppColors.SurfaceRaised
-    }
-    val thumbColor = if (enabled) AppColors.OnPrimary else AppColors.TextTertiary
-    Surface(
-        modifier = Modifier
-            .size(width = 34.dp, height = 19.dp)
-            .clickable(enabled = enabled, onClick = onToggle),
-        color = trackColor,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, if (checked) AppColors.Primary else AppColors.DividerStrong)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(2.dp)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .size(15.dp)
-                    .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart),
-                color = thumbColor,
-                shape = CircleShape
-            ) {}
-        }
-    }
-}
-
-@Composable
-private fun SiteCheckMeta(
-    site: VideoSiteEntity,
-    modifier: Modifier = Modifier,
-    isChecking: Boolean
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (isChecking) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(12.dp),
-                color = AppColors.Primary,
-                strokeWidth = 1.5.dp
-            )
-        }
-        Text(
-            text = if (isChecking) buildAnnotatedString { append("检测中") } else siteCheckMetaText(site),
-            modifier = Modifier.weight(1f),
-            color = AppColors.Primary,
-            fontSize = 9.5.sp,
-            lineHeight = 11.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun SitePrimaryActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    enabled: Boolean = true,
-    isLoading: Boolean = false,
-    active: Boolean = false,
-    activeTint: Color = AppColors.Primary,
-    onClick: () -> Unit
-) {
-    val tint = when {
-        active -> activeTint
-        enabled -> AppColors.TextPrimary
-        else -> AppColors.TextTertiary
-    }
-    Box(
-        modifier = Modifier
-            .size(width = 24.dp, height = 19.dp)
-            .clickable(enabled = enabled && !isLoading, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(13.dp),
-                color = AppColors.Primary,
-                strokeWidth = 1.8.dp
-            )
-        } else {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = tint,
-                modifier = Modifier.size(17.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ManagementIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    enabled: Boolean = true,
-    isLoading: Boolean = false,
-    active: Boolean = false,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(24.dp)
-            .clickable(enabled = enabled && !isLoading, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(12.dp),
-                color = AppColors.Primary,
-                strokeWidth = 1.7.dp
-            )
-        } else {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = when {
-                    active -> AppColors.Primary
-                    enabled -> AppColors.TextPrimary
-                    else -> AppColors.TextTertiary
-                },
-                modifier = Modifier.size(14.dp)
-            )
         }
     }
 }
@@ -617,38 +456,6 @@ private object SourceCheckTimeFormatter {
     fun get(): SimpleDateFormat {
         return formatter.get() ?: SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).also {
             formatter.set(it)
-        }
-    }
-}
-
-@Composable
-private fun ManagementStatusBanner(
-    modifier: Modifier = Modifier,
-    message: String,
-    onDismiss: () -> Unit
-) {
-    Surface(
-        modifier = modifier,
-        color = AppColors.Primary.copy(alpha = 0.10f),
-        contentColor = AppColors.Primary,
-        shape = RoundedCornerShape(4.dp),
-        border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.24f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = message,
-                modifier = Modifier.weight(1f),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = AppColors.TextPrimary
-            )
-            TextButton(onClick = onDismiss) {
-                Text("关闭", fontSize = 12.sp)
-            }
         }
     }
 }

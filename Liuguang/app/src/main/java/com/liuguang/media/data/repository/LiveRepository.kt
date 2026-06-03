@@ -41,9 +41,15 @@ class LiveRepository @Inject constructor(
 
     suspend fun getEnabledSources(): List<LiveSourceEntity> = liveSourceDao.getEnabled()
 
+    suspend fun getAllSources(): List<LiveSourceEntity> = liveSourceDao.getAll()
+
     suspend fun insertSource(source: LiveSourceEntity): Long = liveSourceDao.insert(source)
 
+    suspend fun insertSources(sources: List<LiveSourceEntity>): List<Long> = liveSourceDao.insertAll(sources)
+
     suspend fun updateSource(source: LiveSourceEntity) = liveSourceDao.update(source)
+
+    suspend fun updateSources(sources: List<LiveSourceEntity>) = liveSourceDao.updateAll(sources)
 
     suspend fun deleteSource(source: LiveSourceEntity) = liveSourceDao.delete(source)
 
@@ -115,6 +121,7 @@ class LiveRepository @Inject constructor(
     ): Result<LiveSourceCheckResponse> = withContext(Dispatchers.IO) {
         try {
             withTimeout(timeoutMs.milliseconds) {
+                val startedAt = System.currentTimeMillis()
                 val request = Request.Builder().url(url).build()
                 okHttpClient.newCall(request).apply {
                     timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -143,14 +150,16 @@ class LiveRepository @Inject constructor(
                             SourceDataException("接口返回内容无法解析出频道", rawContent = content)
                         )
                     }
-                    channelCache[url] = CachedChannels(channels, System.currentTimeMillis())
+                    val completedAt = System.currentTimeMillis()
+                    channelCache[url] = CachedChannels(channels, completedAt)
 
                     Result.success(
                         LiveSourceCheckResponse(
                             httpCode = response.code,
                             contentType = response.header("Content-Type"),
                             rawContent = content,
-                            channels = channels
+                            channels = channels,
+                            latencyMs = (completedAt - startedAt).coerceAtLeast(1L)
                         )
                     )
                 }

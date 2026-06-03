@@ -8,6 +8,7 @@ import com.liuguang.media.data.local.entity.PodcastSubscriptionEntity
 import java.io.StringReader
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.async
@@ -34,6 +35,25 @@ class PodcastRepository @Inject constructor(
 
     fun observeSubscriptions(): Flow<List<PodcastSubscriptionEntity>> = podcastSubscriptionDao.observeAll()
 
+    suspend fun getAllSubscriptions(): List<PodcastSubscriptionEntity> = podcastSubscriptionDao.getAll()
+
+    suspend fun insertSubscriptions(subscriptions: List<PodcastSubscriptionEntity>): List<Long> =
+        withContext(Dispatchers.IO) {
+            podcastSubscriptionDao.insertAll(subscriptions)
+        }
+
+    suspend fun updateSubscriptionRaw(subscription: PodcastSubscriptionEntity) = withContext(Dispatchers.IO) {
+        podcastSubscriptionDao.update(subscription)
+    }
+
+    suspend fun updateSubscriptions(subscriptions: List<PodcastSubscriptionEntity>) = withContext(Dispatchers.IO) {
+        podcastSubscriptionDao.updateAll(subscriptions)
+    }
+
+    suspend fun clearAllSubscriptions() = withContext(Dispatchers.IO) {
+        podcastSubscriptionDao.clearAll()
+    }
+
     suspend fun addSubscription(url: String): Result<PodcastSubscriptionEntity> = withContext(Dispatchers.IO) {
         val trimmedUrl = url.trim()
         fetchPodcastFeed(trimmedUrl).fold(
@@ -49,7 +69,10 @@ class PodcastRepository @Inject constructor(
                     link = feed.link,
                     episodeCount = feed.episodes.size,
                     lastRefreshTime = now,
-                    sortOrder = existing?.sortOrder ?: podcastSubscriptionDao.maxSortOrder() + 1
+                    sortOrder = existing?.sortOrder ?: podcastSubscriptionDao.maxSortOrder() + 1,
+                    enabled = existing?.enabled ?: true,
+                    lastCheckStatus = "可用",
+                    lastCheckTime = now
                 )
                 val id = podcastSubscriptionDao.insert(subscription)
                 Result.success(subscription.copy(id = existing?.id ?: id))
@@ -71,7 +94,9 @@ class PodcastRepository @Inject constructor(
                     imageUrl = feed.imageUrl,
                     link = feed.link,
                     episodeCount = feed.episodes.size,
-                    lastRefreshTime = System.currentTimeMillis()
+                    lastRefreshTime = System.currentTimeMillis(),
+                    lastCheckStatus = "可用",
+                    lastCheckTime = System.currentTimeMillis()
                 )
                 podcastSubscriptionDao.update(refreshed)
                 Result.success(refreshed)
@@ -89,7 +114,9 @@ class PodcastRepository @Inject constructor(
                     imageUrl = feed.imageUrl,
                     link = feed.link,
                     episodeCount = feed.episodes.size,
-                    lastRefreshTime = System.currentTimeMillis()
+                    lastRefreshTime = System.currentTimeMillis(),
+                    lastCheckStatus = "可用",
+                    lastCheckTime = System.currentTimeMillis()
                 )
                 podcastSubscriptionDao.update(refreshed)
                 Result.success(refreshed)
@@ -100,7 +127,7 @@ class PodcastRepository @Inject constructor(
 
     suspend fun fetchLibraryEpisodes(limitPerFeed: Int = 8): Result<List<PodcastLibraryEpisode>> = withContext(Dispatchers.IO) {
         try {
-            val subscriptions = podcastSubscriptionDao.getAll()
+            val subscriptions = podcastSubscriptionDao.getEnabled()
             val semaphore = Semaphore(PODCAST_LIBRARY_PARALLELISM)
             val episodes = coroutineScope {
                 subscriptions.map { subscription ->
@@ -132,22 +159,85 @@ class PodcastRepository @Inject constructor(
 
     suspend fun fetchPodcastFeed(url: String): Result<PodcastFeed> = withContext(Dispatchers.IO) {
         try {
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", "Liuguang/1.0 Android Podcast")
-                .build()
-            okHttpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return@withContext Result.failure(IllegalStateException("订阅源请求失败：HTTP ${response.code}"))
-                }
-                val content = response.body?.string().orEmpty()
-                if (content.isBlank()) {
-                    return@withContext Result.failure(IllegalStateException("订阅源内容为空"))
-                }
-                Result.success(parseRss(content))
-            }
+            Result.success(fetchPodcastFeedResponse(url).feed)
         } catch (error: Exception) {
             Result.failure(error)
+        }
+    }
+
+    suspend fun checkPodcastSource(
+        url: String,
+        timeoutMs: Long = 10_000L
+    ): Result<PodcastSourceCheckResponse> = withContext(Dispatchers.IO) {
+        try {
+            Result.success(fetchPodcastFeedResponse(url, timeoutMs))
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
+
+    suspend fun moveSubscriptionUp(
+        subscription: PodcastSubscriptionEntity,
+        allSubscriptions: List<PodcastSubscriptionEntity>
+    ) = withContext(Dispatchers.IO) {
+        val currentIndex = allSubscriptions.indexOfFirst { it.id == subscription.id }
+        if (currentIndex > 0) {
+            val previous = allSubscriptions[currentIndex - 1]
+            podcastSubscriptionDao.update(subscription.copy(sortOrder = previous.sortOrder))
+            podcastSubscriptionDao.update(previous.copy(sortOrder = subscription.sortOrder))
+        }
+    }
+
+    suspend fun moveSubscriptionDown(
+        subscription: PodcastSubscriptionEntity,
+        allSubscriptions: List<PodcastSubscriptionEntity>
+    ) = withContext(Dispatchers.IO) {
+        val currentIndex = allSubscriptions.indexOfFirst { it.id == subscription.id }
+        if (currentIndex in 0 until allSubscriptions.lastIndex) {
+            val next = allSubscriptions[currentIndex + 1]
+            podcastSubscriptionDao.update(subscription.copy(sortOrder = next.sortOrder))
+            podcastSubscriptionDao.update(next.copy(sortOrder = subscription.sortOrder))
+        }
+    }
+
+    private fun fetchPodcastFeedResponse(
+        url: String,
+        timeoutMs: Long = 15_000L
+    ): PodcastSourceCheckResponse {
+        val startedAt = System.currentTimeMillis()
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Liuguang/1.0 Android Podcast")
+            .build()
+        okHttpClient.newCall(request).apply {
+            timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
+        }.execute().use { response ->
+            val content = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                throw SourceHttpException(
+                    statusCode = response.code,
+                    message = "HTTP ${response.code}",
+                    rawContent = content
+                )
+            }
+            if (content.isBlank()) {
+                throw SourceDataException("订阅源内容为空", rawContent = content)
+            }
+            return try {
+                PodcastSourceCheckResponse(
+                    httpCode = response.code,
+                    contentType = response.header("Content-Type"),
+                    rawContent = content,
+                    feed = parseRss(content),
+                    latencyMs = (System.currentTimeMillis() - startedAt).coerceAtLeast(1L)
+                )
+            } catch (error: Exception) {
+                throw SourceDataException(
+                    message = error.message ?: "订阅源解析失败",
+                    rawContent = content,
+                    cause = error
+                )
+            }
         }
     }
 

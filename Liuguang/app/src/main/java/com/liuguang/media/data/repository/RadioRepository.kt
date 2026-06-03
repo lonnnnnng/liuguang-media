@@ -47,11 +47,22 @@ class RadioRepository @Inject constructor(
 
     suspend fun getEnabledSources(): List<RadioSourceEntity> = radioSourceDao.getEnabled()
 
+    suspend fun getAllSources(): List<RadioSourceEntity> = radioSourceDao.getAll()
+
     suspend fun insertSource(source: RadioSourceEntity): Long = radioSourceDao.insert(source)
+
+    suspend fun insertSources(sources: List<RadioSourceEntity>): List<Long> = radioSourceDao.insertAll(sources)
 
     suspend fun updateSource(source: RadioSourceEntity) = radioSourceDao.update(source)
 
+    suspend fun updateSources(sources: List<RadioSourceEntity>) = radioSourceDao.updateAll(sources)
+
     suspend fun deleteSource(source: RadioSourceEntity) = radioSourceDao.delete(source)
+
+    suspend fun clearAllSources() {
+        radioSourceDao.clearAll()
+        stationCache.clear()
+    }
 
     suspend fun resetToDefaults() {
         radioSourceDao.clearAll()
@@ -133,6 +144,7 @@ class RadioRepository @Inject constructor(
     ): Result<RadioSourceCheckResponse> = withContext(Dispatchers.IO) {
         try {
             withTimeout(timeoutMs.milliseconds) {
+                val startedAt = System.currentTimeMillis()
                 if (isRawAudioStreamUrl(url)) {
                     return@withTimeout checkDirectAudioSource(url, timeoutMs)
                 }
@@ -152,13 +164,15 @@ class RadioRepository @Inject constructor(
                     val contentType = response.header("Content-Type")
                     if (isDirectAudioResponse(url, contentType)) {
                         val stations = listOf(stationFromDirectAudioUrl(url))
-                        stationCache[url] = CachedStations(stations, System.currentTimeMillis())
+                        val completedAt = System.currentTimeMillis()
+                        stationCache[url] = CachedStations(stations, completedAt)
                         return@withTimeout Result.success(
                             RadioSourceCheckResponse(
                                 httpCode = response.code,
                                 contentType = contentType,
                                 rawContent = directAudioRawContent(url, contentType),
-                                stations = stations
+                                stations = stations,
+                                latencyMs = (completedAt - startedAt).coerceAtLeast(1L)
                             )
                         )
                     }
@@ -176,13 +190,15 @@ class RadioRepository @Inject constructor(
                             SourceDataException("接口返回内容无法解析出电台", rawContent = content)
                         )
                     }
-                    stationCache[url] = CachedStations(stations, System.currentTimeMillis())
+                    val completedAt = System.currentTimeMillis()
+                    stationCache[url] = CachedStations(stations, completedAt)
                     Result.success(
                         RadioSourceCheckResponse(
                             httpCode = response.code,
                             contentType = response.header("Content-Type"),
                             rawContent = content,
-                            stations = stations
+                            stations = stations,
+                            latencyMs = (completedAt - startedAt).coerceAtLeast(1L)
                         )
                     )
                 }
@@ -217,6 +233,7 @@ class RadioRepository @Inject constructor(
         url: String,
         timeoutMs: Long
     ): Result<RadioSourceCheckResponse> {
+        val startedAt = System.currentTimeMillis()
         return executeAudioProbeRequest(url, timeoutMs).use { response ->
             val contentType = response.header("Content-Type")
             if (!response.isSuccessful) {
@@ -230,13 +247,15 @@ class RadioRepository @Inject constructor(
             }
 
             val stations = listOf(stationFromDirectAudioUrl(url))
-            stationCache[url] = CachedStations(stations, System.currentTimeMillis())
+            val completedAt = System.currentTimeMillis()
+            stationCache[url] = CachedStations(stations, completedAt)
             Result.success(
                 RadioSourceCheckResponse(
                     httpCode = response.code,
                     contentType = contentType,
                     rawContent = directAudioRawContent(url, contentType),
-                    stations = stations
+                    stations = stations,
+                    latencyMs = (completedAt - startedAt).coerceAtLeast(1L)
                 )
             )
         }

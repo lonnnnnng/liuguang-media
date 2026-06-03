@@ -12,11 +12,20 @@ interface LiveSourceDao {
     @Query("SELECT * FROM live_sources WHERE enabled = 1 ORDER BY sortOrder ASC, id ASC")
     suspend fun getEnabled(): List<LiveSourceEntity>
 
+    @Query("SELECT * FROM live_sources ORDER BY sortOrder ASC, id ASC")
+    suspend fun getAll(): List<LiveSourceEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(source: LiveSourceEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(sources: List<LiveSourceEntity>): List<Long>
+
     @Update
     suspend fun update(source: LiveSourceEntity)
+
+    @Update
+    suspend fun updateAll(sources: List<LiveSourceEntity>)
 
     @Delete
     suspend fun delete(source: LiveSourceEntity)

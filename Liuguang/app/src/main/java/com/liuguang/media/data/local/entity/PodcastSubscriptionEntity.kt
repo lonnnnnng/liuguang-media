@@ -18,5 +18,8 @@ data class PodcastSubscriptionEntity(
     val link: String = "",
     val episodeCount: Int = 0,
     val lastRefreshTime: Long = 0,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    val enabled: Boolean = true,
+    val lastCheckStatus: String = "未检测",
+    val lastCheckTime: Long = 0
 )

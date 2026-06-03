@@ -146,6 +146,33 @@ fun SourceUrlEditorDialog(
 }
 
 @Composable
+fun SourceBulkImportDialog(
+    title: String,
+    description: String,
+    placeholder: String,
+    helperText: String,
+    icon: ImageVector,
+    isImporting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    SourceUrlEditorDialog(
+        title = title,
+        initialUrl = "",
+        description = description,
+        urlLabel = "导入内容",
+        urlPlaceholder = placeholder,
+        helperText = helperText,
+        icon = icon,
+        confirmText = "导入",
+        isConfirming = isImporting,
+        dismissEnabled = !isImporting,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm
+    )
+}
+
+@Composable
 private fun SourceEditorFrame(
     title: String,
     description: String,
@@ -168,12 +195,12 @@ private fun SourceEditorFrame(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.93f)
-                .heightIn(max = 680.dp),
+                .fillMaxWidth(0.90f)
+                .heightIn(max = 560.dp),
             color = AppColors.Surface,
             shape = RoundedCornerShape(8.dp),
             tonalElevation = 0.dp,
-            shadowElevation = 16.dp,
+            shadowElevation = 10.dp,
             border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.16f))
         ) {
             Column {
@@ -195,8 +222,8 @@ private fun SourceEditorFrame(
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 18.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     content = content
                 )
 
@@ -227,12 +254,12 @@ private fun SourceEditorHeader(
         contentColor = AppColors.TextPrimary
     ) {
         Row(
-            modifier = Modifier.padding(start = 18.dp, top = 16.dp, end = 10.dp, bottom = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(start = 14.dp, top = 12.dp, end = 8.dp, bottom = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.Top
         ) {
             Surface(
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(38.dp),
                 color = AppColors.PrimaryLight,
                 contentColor = AppColors.OnPrimary,
                 shape = RoundedCornerShape(8.dp),
@@ -243,7 +270,7 @@ private fun SourceEditorHeader(
                         imageVector = icon,
                         contentDescription = null,
                         tint = AppColors.Primary,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -253,15 +280,15 @@ private fun SourceEditorHeader(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = title,
                         modifier = Modifier.weight(1f, fill = false),
                         color = AppColors.TextPrimary,
-                        fontSize = 19.sp,
-                        lineHeight = 23.sp,
+                        fontSize = 16.sp,
+                        lineHeight = 20.sp,
                         fontWeight = FontWeight.Black,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -273,9 +300,9 @@ private fun SourceEditorHeader(
                     ) {
                         Text(
                             text = "必填",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            fontSize = 10.sp,
-                            lineHeight = 12.sp,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                            fontSize = 9.5.sp,
+                            lineHeight = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -283,8 +310,8 @@ private fun SourceEditorHeader(
                 Text(
                     text = description,
                     color = AppColors.TextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -298,7 +325,7 @@ private fun SourceEditorHeader(
                     imageVector = Icons.Default.Close,
                     contentDescription = "关闭",
                     tint = if (dismissEnabled) AppColors.TextSecondary else AppColors.TextTertiary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -321,21 +348,21 @@ private fun SourceTextField(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = label,
                 color = AppColors.TextPrimary,
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "*",
                 color = AppColors.Error,
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
                 fontWeight = FontWeight.Black
             )
         }
@@ -363,8 +390,8 @@ private fun SourceTextField(
                     Text(
                         text = text,
                         color = if (errorText != null) AppColors.Error else AppColors.TextTertiary,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp
+                        fontSize = 10.5.sp,
+                        lineHeight = 14.sp
                     )
                 }
             },
@@ -395,15 +422,15 @@ private fun SourceEditorActions(
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedButton(
                 onClick = onDismiss,
                 enabled = dismissEnabled && !isConfirming,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
+                    .height(42.dp),
                 shape = RoundedCornerShape(8.dp),
                 border = BorderStroke(1.dp, AppColors.DividerStrong),
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -411,14 +438,14 @@ private fun SourceEditorActions(
                     disabledContentColor = AppColors.TextTertiary
                 )
             ) {
-                Text("取消", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("取消", fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
             Button(
                 onClick = onConfirm,
                 enabled = canConfirm && !isConfirming,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
+                    .height(42.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.Primary,
@@ -438,11 +465,11 @@ private fun SourceEditorActions(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                 }
-                Text(confirmText, fontSize = 14.sp, fontWeight = FontWeight.Black)
+                Text(confirmText, fontSize = 13.sp, fontWeight = FontWeight.Black)
             }
         }
     }

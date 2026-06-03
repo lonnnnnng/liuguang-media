@@ -18,16 +18,15 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,20 +39,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.liuguang.media.data.local.entity.PodcastSubscriptionEntity
 import com.liuguang.media.ui.components.CinemaBackground
-import com.liuguang.media.ui.components.CinemaMessage
 import com.liuguang.media.ui.components.PageHeader
+import com.liuguang.media.ui.components.SourceBulkImportDialog
+import com.liuguang.media.ui.components.SourceCheckResultDialog
+import com.liuguang.media.ui.components.SourceCheckStatusMeta
+import com.liuguang.media.ui.components.SourceCompactEnabledSwitch
+import com.liuguang.media.ui.components.SourceManagementEmptyState
 import com.liuguang.media.ui.components.SourceManagementIconButton
-import com.liuguang.media.ui.components.SourceManagementMeta
+import com.liuguang.media.ui.components.SourceManagementStatusBanner
+import com.liuguang.media.ui.components.SourceManagementTopActionButton
 import com.liuguang.media.ui.components.SourcePrimaryActionButton
 import com.liuguang.media.ui.components.SourceUrlEditorDialog
 import com.liuguang.media.ui.theme.AppColors
@@ -68,10 +69,21 @@ fun PodcastSourceManagementScreen(
 ) {
     val sources by viewModel.subscriptions.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val checkingSubscriptionId by viewModel.checkingSubscriptionId.collectAsState()
+    val batchCheckingSubscriptionIds by viewModel.batchCheckingSubscriptionIds.collectAsState()
+    val checkResultDialog by viewModel.checkResultDialog.collectAsState()
+    val importUiState by viewModel.importUiState.collectAsState()
+    val batchUiState by viewModel.batchUiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
     var editingSource by remember { mutableStateOf<PodcastSubscriptionEntity?>(null) }
     var deletingSource by remember { mutableStateOf<PodcastSubscriptionEntity?>(null) }
-    val isBusy = uiState.isRefreshingSubscriptions || uiState.isRefreshingSubscriptionId != null || uiState.isAdding
+    var showClearDialog by remember { mutableStateOf(false) }
+    val isBusy = uiState.isAdding ||
+        uiState.isRefreshingSubscriptionId != null ||
+        checkingSubscriptionId != null ||
+        importUiState.isImporting ||
+        batchUiState.isRunning
 
     LaunchedEffect(uiState.isAdding, uiState.message, showAddDialog) {
         if (showAddDialog && !uiState.isAdding && uiState.message?.startsWith("已订阅") == true) {
@@ -95,44 +107,62 @@ fun PodcastSourceManagementScreen(
                 title = "播客源管理",
                 onBackClick = onNavigateBack,
                 actions = {
-                    IconButton(
-                        onClick = { showAddDialog = true },
-                        enabled = !isBusy
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "添加播客源",
-                            tint = if (!isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                        )
-                    }
-                    IconButton(
-                        onClick = viewModel::refreshSubscriptions,
-                        enabled = sources.isNotEmpty() && !isBusy
-                    ) {
-                        if (uiState.isRefreshingSubscriptions) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = AppColors.Primary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "刷新播客源",
-                                tint = if (sources.isNotEmpty() && !isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                            )
-                        }
-                    }
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Add,
+                        contentDescription = "单个新增播客源",
+                        enabled = !isBusy,
+                        onClick = { showAddDialog = true }
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Link,
+                        contentDescription = "批量导入播客源",
+                        enabled = !isBusy,
+                        isLoading = importUiState.isImporting,
+                        onClick = { showImportDialog = true }
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.CheckCircle,
+                        contentDescription = "批量测试连通性",
+                        enabled = sources.isNotEmpty() && !isBusy,
+                        isLoading = batchUiState.isRunning,
+                        onClick = viewModel::batchCheckSubscriptions
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Delete,
+                        contentDescription = "批量删除播客源",
+                        enabled = sources.isNotEmpty() && !isBusy,
+                        onClick = { showClearDialog = true }
+                    )
                 }
             )
 
+            val statusMessage = batchUiState.takeIf { it.isRunning }?.let {
+                "${it.message.orEmpty()} (${it.currentIndex}/${it.total})"
+            } ?: batchUiState.message ?: importUiState.message
+            statusMessage?.let { message ->
+                SourceManagementStatusBanner(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    message = message,
+                    onDismiss = {
+                        viewModel.consumeImportMessage()
+                        viewModel.consumeBatchMessage()
+                    }
+                )
+            }
+
             if (sources.isEmpty()) {
-                CinemaMessage(
+                SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = "暂无播客源",
-                    message = "添加 RSS 地址后即可在音频页和这里管理播客订阅。",
-                    actionText = if (isBusy) null else "添加播客源",
-                    onAction = if (isBusy) null else ({ showAddDialog = true })
+                    message = "添加 RSS 或 Atom 地址后，音频页会聚合播客节目。",
+                    icon = Icons.Default.RssFeed,
+                    primaryActionText = "单个新增",
+                    onPrimaryAction = { showAddDialog = true },
+                    secondaryActionText = "批量导入",
+                    onSecondaryAction = { showImportDialog = true },
+                    actionsEnabled = !isBusy
                 )
             } else {
                 LazyColumn(
@@ -143,13 +173,19 @@ fun PodcastSourceManagementScreen(
                         items = sources,
                         key = { _, source -> source.id },
                         contentType = { _, _ -> "podcast-source-row" }
-                    ) { _, source ->
+                    ) { index, source ->
                         PodcastSourceItem(
                             source = source,
+                            canMoveUp = index > 0,
+                            canMoveDown = index < sources.lastIndex,
+                            onToggleEnabled = { viewModel.toggleSubscriptionEnabled(source) },
                             onEdit = { editingSource = source },
                             onDelete = { deletingSource = source },
-                            onRefresh = { viewModel.refreshSubscriptionItem(source) },
-                            isRefreshing = uiState.isRefreshingSubscriptionId == source.id,
+                            onMoveUp = { viewModel.moveSubscriptionUp(source) },
+                            onMoveDown = { viewModel.moveSubscriptionDown(source) },
+                            onCheck = { viewModel.checkSubscription(source) },
+                            isChecking = checkingSubscriptionId == source.id || source.id in batchCheckingSubscriptionIds,
+                            isCheckEnabled = !isBusy || checkingSubscriptionId == source.id,
                             actionsEnabled = !isBusy
                         )
                     }
@@ -169,6 +205,22 @@ fun PodcastSourceManagementScreen(
         )
     }
 
+    if (showImportDialog) {
+        SourceBulkImportDialog(
+            title = "批量导入播客源",
+            description = "每行一个播客源地址，支持 RSS / Atom；只有 URL 时会自动解析标题。",
+            placeholder = "https://example.com/podcast/feed.xml\nhttps://example.com/show/rss",
+            helperText = "导入时会解析订阅标题和节目数量，并自动跳过重复 URL。",
+            icon = Icons.Default.RssFeed,
+            isImporting = importUiState.isImporting,
+            onDismiss = { showImportDialog = false },
+            onConfirm = { rawText ->
+                viewModel.importSubscriptions(rawText)
+                showImportDialog = false
+            }
+        )
+    }
+
     editingSource?.let { source ->
         PodcastSourceEditorDialog(
             title = "编辑播客源",
@@ -183,26 +235,33 @@ fun PodcastSourceManagementScreen(
     }
 
     deletingSource?.let { source ->
-        AlertDialog(
-            onDismissRequest = { deletingSource = null },
-            containerColor = AppColors.Surface,
-            titleContentColor = AppColors.TextPrimary,
-            textContentColor = AppColors.TextSecondary,
-            title = { Text("删除播客源") },
-            text = { Text("确定删除 ${source.title} 吗？") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteSubscription(source)
-                    deletingSource = null
-                }) {
-                    Text("删除", color = AppColors.Error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingSource = null }) {
-                    Text("取消")
-                }
+        ConfirmDialog(
+            title = "删除播客源",
+            message = "确定删除 ${source.title} 吗？",
+            onDismiss = { deletingSource = null },
+            onConfirm = {
+                viewModel.deleteSubscription(source)
+                deletingSource = null
             }
+        )
+    }
+
+    if (showClearDialog) {
+        ConfirmDialog(
+            title = "批量删除播客源",
+            message = "确定要删除所有播客源吗？音频页将不再聚合播客节目。",
+            onDismiss = { showClearDialog = false },
+            onConfirm = {
+                viewModel.clearAllSubscriptions()
+                showClearDialog = false
+            }
+        )
+    }
+
+    checkResultDialog?.let { state ->
+        SourceCheckResultDialog(
+            state = state,
+            onDismiss = viewModel::dismissCheckResultDialog
         )
     }
 
@@ -423,10 +482,16 @@ private fun PodcastFormatChip(text: String) {
 @Composable
 private fun PodcastSourceItem(
     source: PodcastSubscriptionEntity,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onRefresh: () -> Unit,
-    isRefreshing: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onCheck: () -> Unit,
+    isChecking: Boolean,
+    isCheckEnabled: Boolean,
     actionsEnabled: Boolean
 ) {
     Surface(
@@ -448,15 +513,29 @@ private fun PodcastSourceItem(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    Text(
-                        text = source.title,
-                        color = AppColors.TextPrimary,
-                        fontSize = 13.sp,
-                        lineHeight = 16.sp,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = source.title,
+                            modifier = Modifier.weight(1f, fill = false),
+                            color = AppColors.TextPrimary,
+                            fontSize = 13.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${source.episodeCount} 期",
+                            color = AppColors.Primary,
+                            fontSize = 9.5.sp,
+                            lineHeight = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1
+                        )
+                    }
                     Text(
                         text = source.url,
                         color = AppColors.TextSecondary,
@@ -467,13 +546,18 @@ private fun PodcastSourceItem(
                     )
                 }
                 SourcePrimaryActionButton(
-                    icon = Icons.Default.Refresh,
-                    contentDescription = "刷新",
-                    enabled = actionsEnabled || isRefreshing,
-                    isLoading = isRefreshing,
-                    onClick = onRefresh
+                    icon = Icons.Default.CheckCircle,
+                    contentDescription = "检测",
+                    enabled = isCheckEnabled || isChecking,
+                    isLoading = isChecking,
+                    onClick = onCheck
                 )
                 Spacer(modifier = Modifier.width(6.dp))
+                SourceCompactEnabledSwitch(
+                    checked = source.enabled,
+                    onToggle = onToggleEnabled,
+                    enabled = actionsEnabled
+                )
             }
 
             Row(
@@ -481,13 +565,25 @@ private fun PodcastSourceItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SourceManagementMeta(
-                    text = podcastMetaText(source),
+                SourceCheckStatusMeta(
+                    lastCheckStatus = source.lastCheckStatus,
+                    lastCheckTime = source.lastCheckTime,
                     modifier = Modifier.weight(1f),
-                    isLoading = isRefreshing,
-                    loadingText = "刷新中"
+                    isChecking = isChecking
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                    SourceManagementIconButton(
+                        icon = Icons.Default.ArrowUpward,
+                        contentDescription = "上移",
+                        enabled = actionsEnabled && canMoveUp,
+                        onClick = onMoveUp
+                    )
+                    SourceManagementIconButton(
+                        icon = Icons.Default.ArrowDownward,
+                        contentDescription = "下移",
+                        enabled = actionsEnabled && canMoveDown,
+                        onClick = onMoveDown
+                    )
                     SourceManagementIconButton(
                         icon = Icons.Default.Edit,
                         contentDescription = "编辑",
@@ -511,17 +607,29 @@ private fun formatRefreshTime(value: Long): String {
     return SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(value))
 }
 
-private fun podcastMetaText(source: PodcastSubscriptionEntity) = buildAnnotatedString {
-    withStyle(
-        SpanStyle(
-            color = AppColors.Success,
-            fontWeight = FontWeight.Bold
-        )
-    ) {
-        append("${source.episodeCount} 期")
-    }
-    append(" · ")
-    withStyle(SpanStyle(color = AppColors.TextTertiary)) {
-        append(formatRefreshTime(source.lastRefreshTime))
-    }
+@Composable
+private fun ConfirmDialog(
+    title: String,
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = AppColors.Surface,
+        titleContentColor = AppColors.TextPrimary,
+        textContentColor = AppColors.TextSecondary,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }

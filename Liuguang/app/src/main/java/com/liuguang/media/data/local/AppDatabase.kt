@@ -23,7 +23,7 @@ import com.liuguang.media.data.local.entity.VideoSiteEntity
         RadioSourceEntity::class,
         PodcastSubscriptionEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -190,6 +190,14 @@ abstract class AppDatabase : RoomDatabase() {
                     CREATE UNIQUE INDEX IF NOT EXISTS index_podcast_subscriptions_url
                     ON podcast_subscriptions(url)
                 """)
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE podcast_subscriptions ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE podcast_subscriptions ADD COLUMN lastCheckStatus TEXT NOT NULL DEFAULT '未检测'")
+                db.execSQL("ALTER TABLE podcast_subscriptions ADD COLUMN lastCheckTime INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

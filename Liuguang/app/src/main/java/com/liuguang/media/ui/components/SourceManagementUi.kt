@@ -1,19 +1,28 @@
 package com.liuguang.media.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +40,189 @@ import com.liuguang.media.ui.theme.AppColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+data class SourceImportUiState(
+    val isImporting: Boolean = false,
+    val message: String? = null
+)
+
+data class SourceBatchUiState(
+    val isRunning: Boolean = false,
+    val currentIndex: Int = 0,
+    val total: Int = 0,
+    val message: String? = null
+)
+
+@Composable
+fun SourceManagementTopActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        enabled = enabled && !isLoading,
+        modifier = Modifier.size(42.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(19.dp),
+                color = AppColors.Primary,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = if (enabled) AppColors.TextPrimary else AppColors.TextTertiary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun SourceManagementStatusBanner(
+    modifier: Modifier = Modifier,
+    message: String,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        modifier = modifier,
+        color = AppColors.Primary.copy(alpha = 0.10f),
+        contentColor = AppColors.Primary,
+        shape = RoundedCornerShape(6.dp),
+        border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.22f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = message,
+                modifier = Modifier.weight(1f),
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
+                color = AppColors.TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            TextButton(onClick = onDismiss) {
+                Text("关闭", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+fun SourceManagementEmptyState(
+    icon: ImageVector,
+    title: String,
+    message: String,
+    primaryActionText: String,
+    onPrimaryAction: () -> Unit,
+    secondaryActionText: String? = null,
+    onSecondaryAction: (() -> Unit)? = null,
+    actionsEnabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp),
+            color = AppColors.Surface,
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, AppColors.Divider)
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    color = AppColors.PrimaryLight,
+                    contentColor = AppColors.Primary,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.18f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(25.dp)
+                        )
+                    }
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Text(
+                        text = title,
+                        color = AppColors.TextPrimary,
+                        fontSize = 16.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = message,
+                        color = AppColors.TextSecondary,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    Button(
+                        onClick = onPrimaryAction,
+                        enabled = actionsEnabled,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.Primary,
+                            contentColor = AppColors.OnPrimary,
+                            disabledContainerColor = AppColors.SurfaceRaised,
+                            disabledContentColor = AppColors.TextTertiary
+                        )
+                    ) {
+                        Text(primaryActionText, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                    }
+                    if (secondaryActionText != null && onSecondaryAction != null) {
+                        OutlinedButton(
+                            onClick = onSecondaryAction,
+                            enabled = actionsEnabled,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, AppColors.DividerStrong),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AppColors.TextSecondary,
+                                disabledContentColor = AppColors.TextTertiary
+                            )
+                        ) {
+                            Text(secondaryActionText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun SourceCompactEnabledSwitch(
@@ -106,6 +298,29 @@ fun SourcePrimaryActionButton(
             )
         }
     }
+}
+
+fun parseNamedSourceLines(
+    raw: String,
+    fallbackPrefix: String
+): List<Pair<String, String>> {
+    return raw
+        .lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() && !it.startsWith("#") }
+        .mapIndexedNotNull { index, line ->
+            val normalized = line.replace('，', ',')
+            val parts = normalized.split(",", limit = 2)
+            val (name, url) = if (parts.size == 2) {
+                parts[0].trim() to parts[1].trim()
+            } else {
+                "$fallbackPrefix${index + 1}" to normalized.trim()
+            }
+            url.takeIf { it.startsWith("http", ignoreCase = true) }
+                ?.let { name.ifBlank { "$fallbackPrefix${index + 1}" } to it }
+        }
+        .distinctBy { it.second.trim().trimEnd('/') }
+        .toList()
 }
 
 @Composable

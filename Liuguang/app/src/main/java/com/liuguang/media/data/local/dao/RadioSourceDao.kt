@@ -17,11 +17,20 @@ interface RadioSourceDao {
     @Query("SELECT * FROM radio_sources WHERE enabled = 1 ORDER BY sortOrder ASC, id ASC")
     suspend fun getEnabled(): List<RadioSourceEntity>
 
+    @Query("SELECT * FROM radio_sources ORDER BY sortOrder ASC, id ASC")
+    suspend fun getAll(): List<RadioSourceEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(source: RadioSourceEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(sources: List<RadioSourceEntity>): List<Long>
+
     @Update
     suspend fun update(source: RadioSourceEntity)
+
+    @Update
+    suspend fun updateAll(sources: List<RadioSourceEntity>)
 
     @Delete
     suspend fun delete(source: RadioSourceEntity)

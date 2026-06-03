@@ -20,10 +20,9 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,13 +41,16 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.liuguang.media.data.local.entity.RadioSourceEntity
 import com.liuguang.media.ui.components.CinemaBackground
-import com.liuguang.media.ui.components.CinemaMessage
 import com.liuguang.media.ui.components.PageHeader
+import com.liuguang.media.ui.components.SourceBulkImportDialog
 import com.liuguang.media.ui.components.SourceCheckResultDialog
-import com.liuguang.media.ui.components.SourceEditorDialog
 import com.liuguang.media.ui.components.SourceCheckStatusMeta
 import com.liuguang.media.ui.components.SourceCompactEnabledSwitch
+import com.liuguang.media.ui.components.SourceEditorDialog
+import com.liuguang.media.ui.components.SourceManagementEmptyState
 import com.liuguang.media.ui.components.SourceManagementIconButton
+import com.liuguang.media.ui.components.SourceManagementStatusBanner
+import com.liuguang.media.ui.components.SourceManagementTopActionButton
 import com.liuguang.media.ui.components.SourcePrimaryActionButton
 import com.liuguang.media.ui.theme.AppColors
 
@@ -59,11 +61,16 @@ fun RadioSourceManagementScreen(
 ) {
     val sources by viewModel.sources.collectAsState()
     val checkingSourceId by viewModel.checkingSourceId.collectAsState()
+    val batchCheckingSourceIds by viewModel.batchCheckingSourceIds.collectAsState()
     val checkResultDialog by viewModel.checkResultDialog.collectAsState()
+    val importUiState by viewModel.importUiState.collectAsState()
+    val batchUiState by viewModel.batchUiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
     var editingSource by remember { mutableStateOf<RadioSourceEntity?>(null) }
     var deletingSource by remember { mutableStateOf<RadioSourceEntity?>(null) }
-    val isBusy = checkingSourceId != null
+    var showClearDialog by remember { mutableStateOf(false) }
+    val isBusy = checkingSourceId != null || importUiState.isImporting || batchUiState.isRunning
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -71,26 +78,62 @@ fun RadioSourceManagementScreen(
                 title = "电台源管理",
                 onBackClick = onNavigateBack,
                 actions = {
-                    IconButton(
-                        onClick = { showAddDialog = true },
-                        enabled = !isBusy
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "添加",
-                            tint = if (!isBusy) AppColors.TextPrimary else AppColors.TextTertiary
-                        )
-                    }
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Add,
+                        contentDescription = "单个新增电台源",
+                        enabled = !isBusy,
+                        onClick = { showAddDialog = true }
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Link,
+                        contentDescription = "批量导入电台源",
+                        enabled = !isBusy,
+                        isLoading = importUiState.isImporting,
+                        onClick = { showImportDialog = true }
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.CheckCircle,
+                        contentDescription = "批量测试连通性",
+                        enabled = sources.isNotEmpty() && !isBusy,
+                        isLoading = batchUiState.isRunning,
+                        onClick = viewModel::batchCheckSources
+                    )
+                    SourceManagementTopActionButton(
+                        icon = Icons.Default.Delete,
+                        contentDescription = "批量删除电台源",
+                        enabled = sources.isNotEmpty() && !isBusy,
+                        onClick = { showClearDialog = true }
+                    )
                 }
             )
 
+            val statusMessage = batchUiState.takeIf { it.isRunning }?.let {
+                "${it.message.orEmpty()} (${it.currentIndex}/${it.total})"
+            } ?: batchUiState.message ?: importUiState.message
+            statusMessage?.let { message ->
+                SourceManagementStatusBanner(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    message = message,
+                    onDismiss = {
+                        viewModel.consumeImportMessage()
+                        viewModel.consumeBatchMessage()
+                    }
+                )
+            }
+
             if (sources.isEmpty()) {
-                CinemaMessage(
+                SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = "暂无电台源",
                     message = "添加 M3U、PLS、JSON 或 Radio Browser 地址后，电台页会解析列表。",
-                    actionText = if (isBusy) null else "添加电台源",
-                    onAction = if (isBusy) null else ({ showAddDialog = true })
+                    icon = Icons.Default.Radio,
+                    primaryActionText = "单个新增",
+                    onPrimaryAction = { showAddDialog = true },
+                    secondaryActionText = "批量导入",
+                    onSecondaryAction = { showImportDialog = true },
+                    actionsEnabled = !isBusy
                 )
             } else {
                 LazyColumn(
@@ -112,7 +155,7 @@ fun RadioSourceManagementScreen(
                             onMoveUp = { viewModel.moveSourceUp(source) },
                             onMoveDown = { viewModel.moveSourceDown(source) },
                             onCheck = { viewModel.checkSource(source) },
-                            isChecking = checkingSourceId == source.id,
+                            isChecking = checkingSourceId == source.id || source.id in batchCheckingSourceIds,
                             isCheckEnabled = !isBusy || checkingSourceId == source.id,
                             actionsEnabled = !isBusy
                         )
@@ -134,6 +177,22 @@ fun RadioSourceManagementScreen(
             onConfirm = { name, url ->
                 viewModel.addSource(name, url)
                 showAddDialog = false
+            }
+        )
+    }
+
+    if (showImportDialog) {
+        SourceBulkImportDialog(
+            title = "批量导入电台源",
+            description = "每行一个电台源，支持“名称,URL”；只有 URL 时会自动命名。",
+            placeholder = "热门电台,https://example.com/radio.json\nhttps://example.com/radio.pls",
+            helperText = "支持 M3U、PLS、JSON、Radio Browser 或直连音频地址，自动跳过重复 URL。",
+            icon = Icons.Default.Radio,
+            isImporting = importUiState.isImporting,
+            onDismiss = { showImportDialog = false },
+            onConfirm = { rawText ->
+                viewModel.importSources(rawText)
+                showImportDialog = false
             }
         )
     }
@@ -164,6 +223,18 @@ fun RadioSourceManagementScreen(
             onConfirm = {
                 viewModel.deleteSource(source)
                 deletingSource = null
+            }
+        )
+    }
+
+    if (showClearDialog) {
+        ConfirmDialog(
+            title = "批量删除电台源",
+            message = "确定要删除所有电台源吗？删除后音频页电台列表会显示为空。",
+            onDismiss = { showClearDialog = false },
+            onConfirm = {
+                viewModel.clearAllSources()
+                showClearDialog = false
             }
         )
     }

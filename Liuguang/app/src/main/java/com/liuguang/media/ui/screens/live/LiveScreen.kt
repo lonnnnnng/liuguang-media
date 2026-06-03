@@ -63,8 +63,15 @@ fun LiveScreen(
     val selectedGroup by viewModel.selectedGroup.collectAsState()
 
     var showSourceSelector by remember { mutableStateOf(false) }
+    val enabledSources = sources.filter { it.enabled }
+    val hasLiveSources = sources.isNotEmpty()
+    val hasEnabledLiveSources = enabledSources.isNotEmpty()
     val groups = remember(uiState) { viewModel.getGroups() }
-    val currentSourceName = sources.firstOrNull { it.id == currentSourceId }?.name ?: "选择直播源"
+    val currentSourceName = when {
+        !hasLiveSources -> "暂无直播源"
+        !hasEnabledLiveSources -> "直播源未启用"
+        else -> sources.firstOrNull { it.id == currentSourceId }?.name ?: "选择直播源"
+    }
 
     LaunchedEffect(Unit) {
         viewModel.showAllChannels()
@@ -115,9 +122,19 @@ fun LiveScreen(
                                 )
                             }
                             is LiveUiState.Empty -> item {
+                                val title = when {
+                                    !hasLiveSources -> "暂无直播源"
+                                    !hasEnabledLiveSources -> "直播源未启用"
+                                    else -> "暂无频道"
+                                }
+                                val message = when {
+                                    !hasLiveSources -> "请先在我的页面进入直播源管理，添加 M3U 直播源。"
+                                    !hasEnabledLiveSources -> "当前所有直播源都已停用，请在直播源管理中启用至少一个源。"
+                                    else -> "当前筛选没有频道，清除搜索或切换分组再试。"
+                                }
                                 CinemaMessage(
-                                    title = "暂无频道",
-                                    message = "当前筛选没有频道，清除搜索或切换分组再试。"
+                                    title = title,
+                                    message = message
                                 )
                             }
                             is LiveUiState.Success -> {
@@ -149,18 +166,31 @@ fun LiveScreen(
             title = { Text("选择直播源") },
             text = {
                 Column {
-                    sources.filter { it.enabled }.forEach { source ->
-                        TextButton(
-                            onClick = {
-                                viewModel.selectSource(source.id)
-                                showSourceSelector = false
+                    if (enabledSources.isEmpty()) {
+                        Text(
+                            text = if (sources.isEmpty()) {
+                                "暂无直播源，请先添加直播源。"
+                            } else {
+                                "暂无启用的直播源，请先启用直播源。"
                             },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = source.name,
-                                color = if (source.id == currentSourceId) AppColors.Primary else AppColors.TextPrimary
-                            )
+                            color = AppColors.TextSecondary,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                    } else {
+                        enabledSources.forEach { source ->
+                            TextButton(
+                                onClick = {
+                                    viewModel.selectSource(source.id)
+                                    showSourceSelector = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = source.name,
+                                    color = if (source.id == currentSourceId) AppColors.Primary else AppColors.TextPrimary
+                                )
+                            }
                         }
                     }
                 }
