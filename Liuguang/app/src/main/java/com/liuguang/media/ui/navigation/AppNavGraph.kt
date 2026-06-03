@@ -36,7 +36,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.liuguang.media.ui.screens.audio.AudioScreen
 import com.liuguang.media.ui.screens.detail.DetailScreen
-import com.liuguang.media.ui.screens.detail.EpisodeListScreen
 import com.liuguang.media.ui.screens.history.HistoryScreen
 import com.liuguang.media.ui.screens.home.HomeScreen
 import com.liuguang.media.ui.screens.live.LiveScreen
@@ -81,8 +80,7 @@ fun AppNavGraph(
     var showExitDialog by remember { mutableStateOf(false) }
 
     val prototypeRoutes = bottomNavItems.map { it.route } + listOf(
-        Destinations.DETAIL,
-        Destinations.EPISODES
+        Destinations.DETAIL
     )
     val showBottomBar = currentRoute in prototypeRoutes
 
@@ -242,23 +240,6 @@ fun AppNavGraph(
                 DetailScreen(
                     siteId = siteId,
                     vodId = vodId,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToPlayer = { playerSiteId, playerVodId, episodeUrl, title, episodeLabel ->
-                        navController.navigate(
-                            Destinations.episodePlayer(playerSiteId, playerVodId, episodeUrl, title, episodeLabel)
-                        )
-                    }
-                )
-            }
-
-            composable(
-                route = Destinations.EPISODES,
-                arguments = listOf(
-                    navArgument("siteId") { type = NavType.LongType },
-                    navArgument("vodId") { type = NavType.StringType }
-                )
-            ) {
-                EpisodeListScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToPlayer = { playerSiteId, playerVodId, episodeUrl, title, episodeLabel ->
                         navController.navigate(

@@ -3,6 +3,7 @@ package com.liuguang.media.ui.screens.settings
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -75,9 +76,16 @@ fun SettingsScreen(
     var showDisclaimerDialog by remember { mutableStateOf(false) }
     var showNetworkSettingsDialog by remember { mutableStateOf(false) }
     val maintenanceMessage by viewModel.maintenanceMessage.collectAsState()
+    val toastMessage by viewModel.toastMessage.collectAsState()
     val updateUiState by viewModel.updateUiState.collectAsState()
     val networkSettings by viewModel.networkSettings.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(toastMessage) {
+        val message = toastMessage ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.consumeToastMessage()
+    }
 
     LaunchedEffect(updateUiState.installFile) {
         val apkFile = updateUiState.installFile ?: return@LaunchedEffect

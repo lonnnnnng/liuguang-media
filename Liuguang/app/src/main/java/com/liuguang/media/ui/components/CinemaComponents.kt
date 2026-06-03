@@ -332,16 +332,6 @@ fun CinemaLoading(
         ),
         label = "loading-pulse"
     )
-    val dotAlpha by transition.animateFloat(
-        initialValue = 0.42f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 520, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "loading-dot-alpha"
-    )
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -389,20 +379,6 @@ fun CinemaLoading(
 
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .rotate(rotation)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .size(9.dp)
-                            .clip(CircleShape)
-                            .background(AppColors.Primary.copy(alpha = dotAlpha))
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
                         .size(52.dp)
                         .scale(pulse)
                         .clip(CircleShape)
@@ -436,15 +412,16 @@ fun CinemaLoading(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 repeat(3) { index ->
+                    val alpha = when (index) {
+                        0 -> 0.38f
+                        1 -> 0.72f
+                        else -> 0.38f
+                    }
                     Box(
                         modifier = Modifier
                             .size(if (index == 1) 5.dp else 4.dp)
                             .clip(CircleShape)
-                            .background(
-                                AppColors.Primary.copy(
-                                    alpha = (dotAlpha - index * 0.16f).coerceIn(0.22f, 1f)
-                                )
-                            )
+                            .background(AppColors.Primary.copy(alpha = alpha))
                     )
                 }
             }

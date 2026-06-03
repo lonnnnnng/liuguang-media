@@ -3,12 +3,12 @@ package com.liuguang.media.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.liuguang.media.ui.theme.AppColors
@@ -29,12 +31,21 @@ import com.liuguang.media.ui.theme.AppColors
 fun PageHeader(
     title: String,
     onBackClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 12.dp,
+    topPadding: Dp = 10.dp,
+    bottomPadding: Dp = 14.dp,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 14.dp),
+            .padding(
+                start = horizontalPadding,
+                top = topPadding,
+                end = horizontalPadding,
+                bottom = bottomPadding
+            ),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -43,14 +54,21 @@ fun PageHeader(
                 onClick = onBackClick,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = CircleShape,
+                        ambientColor = AppColors.Primary.copy(alpha = 0.10f),
+                        spotColor = AppColors.Primary.copy(alpha = 0.16f)
+                    )
+                    .clip(CircleShape)
                     .background(AppColors.Surface)
-                    .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                    .border(1.dp, AppColors.Primary.copy(alpha = 0.16f), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "返回",
-                    tint = AppColors.TextPrimary
+                    tint = AppColors.Primary,
+                    modifier = Modifier.size(21.dp)
                 )
             }
         }

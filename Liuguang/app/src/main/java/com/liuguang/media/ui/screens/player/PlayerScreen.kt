@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -99,6 +100,7 @@ import androidx.media3.ui.PlayerView
 import com.liuguang.media.R
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.NetworkImage
+import com.liuguang.media.ui.components.PageHeader
 import com.liuguang.media.ui.theme.AppColors
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -237,9 +239,12 @@ fun EpisodePlayerScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 if (!isFullscreen) {
-                    PlayerEpisodeTopBar(
+                    PageHeader(
                         title = episodeTopBarTitle(title, saveEpisodeLabel),
-                        onNavigateBack = leavePlayer
+                        onBackClick = leavePlayer,
+                        horizontalPadding = 14.dp,
+                        topPadding = 10.dp,
+                        bottomPadding = 12.dp
                     )
 
                     PlayerSurface(
@@ -697,9 +702,12 @@ fun LivePlayerScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 if (!isFullscreen) {
-                    PlayerEpisodeTopBar(
+                    PageHeader(
                         title = title.ifBlank { "直播频道" },
-                        onNavigateBack = leavePlayer
+                        onBackClick = leavePlayer,
+                        horizontalPadding = 14.dp,
+                        topPadding = 10.dp,
+                        bottomPadding = 12.dp
                     )
 
                     PlayerSurface(
@@ -1022,9 +1030,12 @@ fun RadioPlayerScreen(
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PlayerEpisodeTopBar(
+            PageHeader(
                 title = title.ifBlank { "网络电台" },
-                onNavigateBack = leavePlayer
+                onBackClick = leavePlayer,
+                horizontalPadding = 14.dp,
+                topPadding = 10.dp,
+                bottomPadding = 12.dp
             )
 
             Column(
@@ -1380,45 +1391,29 @@ private fun PlayerProgressBar(
 }
 
 @Composable
-private fun PlayerEpisodeTopBar(
-    title: String,
-    onNavigateBack: () -> Unit
+private fun FullscreenPlayerBackButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 14.dp, top = 10.dp, end = 14.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(44.dp),
+        color = Color.Black.copy(alpha = 0.46f),
+        contentColor = Color.White,
+        shape = CircleShape,
+        border = BorderStroke(
+            width = 1.dp,
+            color = Color.White.copy(alpha = 0.24f)
+        ),
+        shadowElevation = 0.dp
     ) {
-        Surface(
-            onClick = onNavigateBack,
-            modifier = Modifier.size(42.dp),
-            color = AppColors.SurfaceAlt,
-            contentColor = AppColors.TextPrimary,
-            shape = RoundedCornerShape(4.dp),
-            border = BorderStroke(1.dp, AppColors.Divider)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回",
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "返回",
+                modifier = Modifier.size(21.dp)
+            )
         }
-
-        Text(
-            text = title,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp),
-            color = AppColors.TextPrimary,
-            fontSize = 18.sp,
-            lineHeight = 22.sp,
-            fontWeight = FontWeight.Black,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
@@ -1751,18 +1746,12 @@ private fun PlayerSurface(
                     .background(Color.Black.copy(alpha = 0.38f))
             ) {
                 if (isFullscreen) {
-                    IconButton(
+                    FullscreenPlayerBackButton(
                         onClick = onExitFullscreen,
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = Color.White
-                        )
-                    }
+                    )
                 }
 
                 Surface(

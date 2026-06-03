@@ -21,10 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +47,7 @@ import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.CinemaLoading
 import com.liuguang.media.ui.components.CinemaMessage
 import com.liuguang.media.ui.components.NetworkImage
+import com.liuguang.media.ui.components.PageHeader
 import com.liuguang.media.ui.theme.AppColors
 
 @Composable
@@ -94,9 +92,12 @@ fun DetailScreen(
                         .padding(horizontal = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = {
-                        DetailTopActions(
+                        PageHeader(
                             title = vodDetail.vod_name,
-                            onBackClick = onNavigateBack
+                            onBackClick = onNavigateBack,
+                            horizontalPadding = 0.dp,
+                            topPadding = 10.dp,
+                            bottomPadding = 0.dp
                         )
 
                         DetailOverviewCard(
@@ -141,38 +142,6 @@ fun DetailScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun DetailTopActions(
-    title: String,
-    onBackClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp, bottom = 0.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        DetailSmallIconButton(
-            icon = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "返回首页",
-            onClick = onBackClick
-        )
-        Text(
-            text = title,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 2.dp),
-            color = AppColors.TextPrimary,
-            fontSize = 18.sp,
-            lineHeight = 22.sp,
-            fontWeight = FontWeight.Black,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
@@ -569,30 +538,6 @@ private fun DetailRailHead(
             color = AppColors.TextTertiary,
             fontSize = 9.sp,
             fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun DetailSmallIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = AppColors.TextPrimary,
-            modifier = Modifier.size(19.dp)
         )
     }
 }

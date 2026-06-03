@@ -42,6 +42,9 @@ class SettingsViewModel @Inject constructor(
     private val _maintenanceMessage = MutableStateFlow<String?>(null)
     val maintenanceMessage: StateFlow<String?> = _maintenanceMessage.asStateFlow()
 
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+
     private val _updateUiState = MutableStateFlow(SettingsUpdateUiState())
     val updateUiState: StateFlow<SettingsUpdateUiState> = _updateUiState.asStateFlow()
 
@@ -109,7 +112,7 @@ class SettingsViewModel @Inject constructor(
                                     installFile = null
                                 )
                             }
-                            _maintenanceMessage.value = "已是最新版本：${result.currentVersion}"
+                            _toastMessage.value = "已是最新版本：${result.currentVersion}"
                         }
                         is AppUpdateCheckResult.UpdateAvailable -> {
                             _updateUiState.update {
@@ -205,5 +208,9 @@ class SettingsViewModel @Inject constructor(
 
     fun consumeMaintenanceMessage() {
         _maintenanceMessage.value = null
+    }
+
+    fun consumeToastMessage() {
+        _toastMessage.value = null
     }
 }
