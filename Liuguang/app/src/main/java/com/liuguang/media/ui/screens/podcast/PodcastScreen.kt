@@ -1,5 +1,6 @@
 package com.liuguang.media.ui.screens.podcast
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,14 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Podcasts
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -55,6 +56,10 @@ import com.liuguang.media.ui.components.CinemaSearchInput
 import com.liuguang.media.ui.components.NetworkImage
 import com.liuguang.media.ui.components.PageHeader
 import com.liuguang.media.ui.theme.AppColors
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun PodcastScreen(
@@ -68,19 +73,25 @@ fun PodcastScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val sources by viewModel.subscriptions.collectAsState()
+    val selectedSubscription = sources.firstOrNull { it.id == uiState.selectedSubscriptionId }
+
+    BackHandler(enabled = uiState.selectedSubscriptionId != null) {
+        viewModel.closeSubscription()
+    }
 
     val content: @Composable () -> Unit = {
         PodcastContent(
             uiState = uiState,
             sources = sources,
+            selectedSubscription = selectedSubscription,
             showHeader = showHeader,
             contentBottomPadding = contentBottomPadding,
             onBackClick = if (showBackButton) onNavigateBack else null,
             onSearchChange = viewModel::setSearchQuery,
-            onRefreshClick = viewModel::refreshLibrary,
-            onAllClick = { viewModel.selectSource(null) },
-            onSourceClick = viewModel::selectSource,
-            onRetryClick = viewModel::refreshLibrary,
+            onRefreshSourcesClick = viewModel::refreshSubscriptions,
+            onSubscriptionClick = viewModel::openSubscription,
+            onCloseSubscriptionClick = viewModel::closeSubscription,
+            onRefreshSubscriptionClick = { subscription -> viewModel.openSubscription(subscription) },
             onEpisodeClick = { item ->
                 onNavigateToPlayer(
                     item.episode,
@@ -120,23 +131,17 @@ fun PodcastScreen(
 private fun PodcastContent(
     uiState: PodcastUiState,
     sources: List<PodcastSubscriptionEntity>,
+    selectedSubscription: PodcastSubscriptionEntity?,
     showHeader: Boolean,
     contentBottomPadding: Dp,
     onBackClick: (() -> Unit)?,
     onSearchChange: (String) -> Unit,
-    onRefreshClick: () -> Unit,
-    onAllClick: () -> Unit,
-    onSourceClick: (Long?) -> Unit,
-    onRetryClick: () -> Unit,
+    onRefreshSourcesClick: () -> Unit,
+    onSubscriptionClick: (PodcastSubscriptionEntity) -> Unit,
+    onCloseSubscriptionClick: () -> Unit,
+    onRefreshSubscriptionClick: (PodcastSubscriptionEntity) -> Unit,
     onEpisodeClick: (PodcastLibraryEpisode) -> Unit
 ) {
-    val visibleEpisodes = filterPodcastEpisodes(
-        episodes = uiState.libraryEpisodes,
-        sources = sources,
-        selectedSourceId = uiState.selectedSourceId,
-        query = uiState.searchQuery
-    )
-
     Column(modifier = Modifier.fillMaxSize()) {
         if (showHeader) {
             PageHeader(
@@ -144,32 +149,62 @@ private fun PodcastContent(
                 onBackClick = onBackClick,
                 actions = {
                     HeaderActionButton(
-                        enabled = !uiState.isRefreshingLibrary,
-                        onClick = onRefreshClick
+                        enabled = !uiState.isRefreshingSubscriptions && !uiState.isLoadingFeed,
+                        onClick = {
+                            selectedSubscription?.let(onRefreshSubscriptionClick)
+                                ?: onRefreshSourcesClick()
+                        }
                     )
                 }
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.Shell)
-        ) {
-            PodcastSearchRow(
-                searchQuery = uiState.searchQuery,
-                isRefreshing = uiState.isRefreshingLibrary,
+        if (selectedSubscription != null || uiState.selectedSubscriptionId != null) {
+            PodcastEpisodeListPage(
+                uiState = uiState,
+                subscription = selectedSubscription,
+                contentBottomPadding = contentBottomPadding,
                 onSearchChange = onSearchChange,
-                onRefreshClick = onRefreshClick
+                onBackClick = onCloseSubscriptionClick,
+                onRefreshClick = {
+                    selectedSubscription?.let(onRefreshSubscriptionClick)
+                },
+                onEpisodeClick = onEpisodeClick
             )
-
-            PodcastTabs(
+        } else {
+            PodcastSubscriptionListPage(
+                uiState = uiState,
                 sources = sources,
-                selectedSourceId = uiState.selectedSourceId,
-                onAllClick = onAllClick,
-                onSourceClick = onSourceClick
+                contentBottomPadding = contentBottomPadding,
+                onSearchChange = onSearchChange,
+                onRefreshClick = onRefreshSourcesClick,
+                onSubscriptionClick = onSubscriptionClick
             )
         }
+    }
+}
+
+@Composable
+private fun PodcastSubscriptionListPage(
+    uiState: PodcastUiState,
+    sources: List<PodcastSubscriptionEntity>,
+    contentBottomPadding: Dp,
+    onSearchChange: (String) -> Unit,
+    onRefreshClick: () -> Unit,
+    onSubscriptionClick: (PodcastSubscriptionEntity) -> Unit
+) {
+    val enabledSources = sources.filter { it.enabled }
+    val visibleSources = filterPodcastSubscriptions(enabledSources, uiState.searchQuery)
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        PodcastSearchHeader(
+            query = uiState.searchQuery,
+            placeholder = "搜索播客栏目",
+            isRefreshing = uiState.isRefreshingSubscriptions,
+            refreshDescription = "刷新播客栏目",
+            onSearchChange = onSearchChange,
+            onRefreshClick = onRefreshClick
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -177,24 +212,99 @@ private fun PodcastContent(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             when {
-                uiState.isRefreshingLibrary && uiState.libraryEpisodes.isEmpty() -> {
-                    item { PodcastLoadingCard(message = "正在聚合播客节目") }
+                uiState.isRefreshingSubscriptions && sources.isEmpty() -> {
+                    item { PodcastLoadingCard(message = "正在刷新播客栏目") }
                 }
-                sources.isEmpty() -> {
+                enabledSources.isEmpty() -> {
                     item {
                         CinemaMessage(
-                            title = "暂无播客源",
+                            title = "暂无播客栏目",
                             message = "请先在我的页面进入播客源管理，添加 RSS 源后再回来收听。"
                         )
                     }
                 }
-                uiState.libraryEpisodes.isEmpty() -> {
+                visibleSources.isEmpty() -> {
                     item {
                         CinemaMessage(
-                            title = "暂无播客节目",
-                            message = "当前播客源没有可播放节目，刷新后再试。",
-                            actionText = "刷新",
-                            onAction = onRetryClick
+                            title = "没有匹配栏目",
+                            message = "换个关键词再试。"
+                        )
+                    }
+                }
+                else -> {
+                    items(
+                        items = visibleSources,
+                        key = { source -> source.id },
+                        contentType = { "podcast-subscription-row" }
+                    ) { source ->
+                        PodcastSubscriptionRow(
+                            source = source,
+                            onClick = { onSubscriptionClick(source) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PodcastEpisodeListPage(
+    uiState: PodcastUiState,
+    subscription: PodcastSubscriptionEntity?,
+    contentBottomPadding: Dp,
+    onSearchChange: (String) -> Unit,
+    onBackClick: () -> Unit,
+    onRefreshClick: () -> Unit,
+    onEpisodeClick: (PodcastLibraryEpisode) -> Unit
+) {
+    val feed = uiState.selectedFeed
+    val feedTitle = feed?.title?.ifBlank { subscription?.title.orEmpty() } ?: subscription?.title.orEmpty()
+    val feedImageUrl = feed?.imageUrl?.ifBlank { subscription?.imageUrl.orEmpty() } ?: subscription?.imageUrl.orEmpty()
+    val episodes = feed?.episodes.orEmpty()
+    val visibleEpisodes = filterFeedEpisodes(episodes, uiState.searchQuery)
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        PodcastFeedHeader(
+            title = feedTitle.ifBlank { "播客栏目" },
+            imageUrl = feedImageUrl,
+            description = feed?.description?.ifBlank { subscription?.description.orEmpty() }
+                ?: subscription?.description.orEmpty(),
+            episodeCount = feed?.episodes?.size ?: subscription?.episodeCount ?: 0,
+            onBackClick = onBackClick
+        )
+
+        PodcastSearchHeader(
+            query = uiState.searchQuery,
+            placeholder = "搜索往期节目",
+            isRefreshing = uiState.isLoadingFeed,
+            refreshDescription = "刷新往期节目",
+            onSearchChange = onSearchChange,
+            onRefreshClick = onRefreshClick
+        )
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = 8.dp, bottom = contentBottomPadding),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            when {
+                uiState.isLoadingFeed && feed == null -> {
+                    item { PodcastLoadingCard(message = "正在获取往期节目") }
+                }
+                subscription == null -> {
+                    item {
+                        CinemaMessage(
+                            title = "栏目不存在",
+                            message = "这个播客栏目可能已被删除，请返回后重新选择。"
+                        )
+                    }
+                }
+                feed == null -> {
+                    item {
+                        CinemaMessage(
+                            title = "暂无往期节目",
+                            message = "点击刷新重新获取这个栏目的节目。"
                         )
                     }
                 }
@@ -202,22 +312,36 @@ private fun PodcastContent(
                     item {
                         CinemaMessage(
                             title = "没有匹配节目",
-                            message = "清除搜索关键词或切换播客源再试。"
+                            message = "清除搜索关键词后再试。"
                         )
                     }
                 }
                 else -> {
                     items(
                         items = visibleEpisodes,
-                        key = { item -> "${item.subscriptionId}|${item.episode.audioUrl}" },
-                        contentType = { "podcast-library-episode-row" }
-                    ) { item ->
+                        key = { episode -> episode.audioUrl },
+                        contentType = { "podcast-feed-episode-row" }
+                    ) { episode ->
+                        val item = PodcastLibraryEpisode(
+                            subscriptionId = subscription.id,
+                            feedTitle = feedTitle,
+                            feedImageUrl = feedImageUrl,
+                            episode = episode
+                        )
                         PodcastEpisodeRow(
                             item = item,
                             onClick = {
+                                val queueItems = visibleEpisodes.map { visibleEpisode ->
+                                    PodcastLibraryEpisode(
+                                        subscriptionId = subscription.id,
+                                        feedTitle = feedTitle,
+                                        feedImageUrl = feedImageUrl,
+                                        episode = visibleEpisode
+                                    ).toAudioQueueItem()
+                                }
                                 AudioPlaybackQueueStore.setQueue(
-                                    items = visibleEpisodes.map { it.toAudioQueueItem() },
-                                    requestedIndex = visibleEpisodes.indexOf(item)
+                                    items = queueItems,
+                                    requestedIndex = visibleEpisodes.indexOf(episode)
                                 )
                                 onEpisodeClick(item)
                             }
@@ -230,115 +354,183 @@ private fun PodcastContent(
 }
 
 @Composable
-private fun PodcastSearchRow(
-    searchQuery: String,
+private fun PodcastSearchHeader(
+    query: String,
+    placeholder: String,
     isRefreshing: Boolean,
+    refreshDescription: String,
     onSearchChange: (String) -> Unit,
     onRefreshClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 14.dp, top = 8.dp, end = 14.dp, bottom = 0.dp),
+            .background(AppColors.Shell)
+            .padding(start = 14.dp, top = 8.dp, end = 14.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         CinemaSearchInput(
-            value = searchQuery,
-            placeholder = "搜索播客、节目、关键词",
+            value = query,
+            placeholder = placeholder,
             onValueChange = onSearchChange,
             modifier = Modifier.weight(1f),
             horizontalPadding = 0.dp
         )
-        Box(
-            modifier = Modifier
-                .size(50.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(AppColors.Surface)
-                .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
-                .clickable(enabled = !isRefreshing, onClick = onRefreshClick),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isRefreshing) {
-                CircularProgressIndicator(
-                    color = AppColors.Primary,
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(20.dp)
+        HeaderActionButton(
+            enabled = !isRefreshing,
+            contentDescription = refreshDescription,
+            onClick = onRefreshClick
+        )
+    }
+}
+
+@Composable
+private fun PodcastSubscriptionRow(
+    source: PodcastSubscriptionEntity,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 14.dp, vertical = 2.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(5.dp))
+            .background(AppColors.Surface)
+            .border(1.dp, AppColors.Divider, RoundedCornerShape(5.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (source.imageUrl.isNotBlank()) {
+            PodcastCover(imageUrl = source.imageUrl, title = source.title, size = 54)
+        } else {
+            PodcastPlaceholderCover(title = source.title, size = 54)
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = source.title.ifBlank { "播客栏目" },
+                    color = AppColors.TextPrimary,
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "刷新播客节目",
-                    tint = AppColors.Primary,
-                    modifier = Modifier.size(21.dp)
+                Text(
+                    text = if (source.episodeCount > 0) "${source.episodeCount} 期" else "待刷新",
+                    color = AppColors.Primary,
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            val description = source.description.ifBlank { source.url }
+            Text(
+                text = description,
+                color = AppColors.TextSecondary,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = subscriptionMeta(source),
+                color = AppColors.TextTertiary,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = "查看往期节目",
+            tint = AppColors.Primary,
+            modifier = Modifier.size(21.dp)
+        )
+    }
+}
+
+@Composable
+private fun PodcastFeedHeader(
+    title: String,
+    imageUrl: String,
+    description: String,
+    episodeCount: Int,
+    onBackClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.Shell)
+            .padding(start = 14.dp, top = 10.dp, end = 14.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(AppColors.Surface)
+                .border(1.dp, AppColors.Divider, RoundedCornerShape(5.dp))
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "返回播客栏目",
+                tint = AppColors.TextPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        if (imageUrl.isNotBlank()) {
+            PodcastCover(imageUrl = imageUrl, title = title, size = 48)
+        } else {
+            PodcastPlaceholderCover(title = title, size = 48)
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = AppColors.TextPrimary,
+                fontSize = 16.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = if (episodeCount > 0) "$episodeCount 期往期节目" else "往期节目",
+                color = AppColors.Primary,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.padding(top = 2.dp),
+                maxLines = 1
+            )
+            if (description.isNotBlank()) {
+                Text(
+                    text = description,
+                    color = AppColors.TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    modifier = Modifier.padding(top = 2.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
     }
-}
-
-@Composable
-private fun PodcastTabs(
-    sources: List<PodcastSubscriptionEntity>,
-    selectedSourceId: Long?,
-    onAllClick: () -> Unit,
-    onSourceClick: (Long?) -> Unit
-) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp)
-            .padding(top = 2.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            PodcastTabChip(
-                label = "全部",
-                active = selectedSourceId == null,
-                onClick = onAllClick
-            )
-        }
-        items(
-            items = sources,
-            key = { source -> source.id },
-            contentType = { "podcast-source-chip" }
-        ) { source ->
-            PodcastTabChip(
-                label = source.title.ifBlank { "播客源" },
-                active = source.id == selectedSourceId,
-                onClick = { onSourceClick(source.id) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun PodcastTabChip(
-    label: String,
-    active: Boolean,
-    onClick: () -> Unit
-) {
-    Text(
-        text = label,
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(if (active) AppColors.Primary else AppColors.Surface)
-            .then(
-                if (active) {
-                    Modifier
-                } else {
-                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        color = if (active) AppColors.OnPrimary else AppColors.TextPrimary,
-        fontSize = 12.sp,
-        lineHeight = 15.sp,
-        fontWeight = FontWeight.Bold,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-    )
 }
 
 @Composable
@@ -451,6 +643,31 @@ private fun PodcastCover(imageUrl: String, title: String, size: Int) {
 }
 
 @Composable
+private fun PodcastPlaceholderCover(title: String, size: Int) {
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        AppColors.Primary.copy(alpha = 0.9f),
+                        AppColors.Accent.copy(alpha = 0.78f)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Podcasts,
+            contentDescription = title,
+            tint = Color.White,
+            modifier = Modifier.size((size * 0.45f).dp)
+        )
+    }
+}
+
+@Composable
 private fun PodcastLoadingCard(message: String) {
     Row(
         modifier = Modifier
@@ -480,6 +697,7 @@ private fun PodcastLoadingCard(message: String) {
 @Composable
 private fun HeaderActionButton(
     enabled: Boolean = true,
+    contentDescription: String = "刷新播客节目",
     onClick: () -> Unit
 ) {
     IconButton(
@@ -493,38 +711,91 @@ private fun HeaderActionButton(
     ) {
         Icon(
             imageVector = Icons.Default.Refresh,
-            contentDescription = "刷新播客节目",
+            contentDescription = contentDescription,
             tint = if (enabled) AppColors.Primary else AppColors.TextTertiary,
             modifier = Modifier.size(21.dp)
         )
     }
 }
 
-private fun filterPodcastEpisodes(
-    episodes: List<PodcastLibraryEpisode>,
+private fun filterPodcastSubscriptions(
     sources: List<PodcastSubscriptionEntity>,
-    selectedSourceId: Long?,
     query: String
-): List<PodcastLibraryEpisode> {
-    val sourceNames = sources.associate { it.id to it.title }
+): List<PodcastSubscriptionEntity> {
     val keyword = query.trim()
-    return episodes.filter { item ->
-        val matchesSource = selectedSourceId == null || item.subscriptionId == selectedSourceId
-        val matchesKeyword = keyword.isBlank() ||
-            item.episode.title.contains(keyword, ignoreCase = true) ||
-            item.feedTitle.contains(keyword, ignoreCase = true) ||
-            item.episode.description.contains(keyword, ignoreCase = true) ||
-            sourceNames[item.subscriptionId].orEmpty().contains(keyword, ignoreCase = true)
-        matchesSource && matchesKeyword
+    if (keyword.isBlank()) return sources
+    return sources.filter { source ->
+        source.title.contains(keyword, ignoreCase = true) ||
+            source.description.contains(keyword, ignoreCase = true) ||
+            source.url.contains(keyword, ignoreCase = true)
     }
+}
+
+private fun filterFeedEpisodes(
+    episodes: List<PodcastEpisode>,
+    query: String
+): List<PodcastEpisode> {
+    val keyword = query.trim()
+    if (keyword.isBlank()) return episodes
+    return episodes.filter { episode ->
+        episode.title.contains(keyword, ignoreCase = true) ||
+            episode.description.contains(keyword, ignoreCase = true) ||
+            episode.pubDate.contains(keyword, ignoreCase = true)
+    }
+}
+
+private fun subscriptionMeta(source: PodcastSubscriptionEntity): String {
+    return listOf(
+        source.lastCheckStatus.takeIf { it.isNotBlank() && it != "未检测" },
+        source.link.takeIf { it.isNotBlank() } ?: source.url
+    ).filterNotNull().joinToString(" · ")
 }
 
 private fun podcastMeta(item: PodcastLibraryEpisode): String {
     return listOf(
         item.episode.duration,
-        item.episode.pubDate
+        formatPodcastPubDate(item.episode.pubDate)
     ).filter { it.isNotBlank() }.joinToString(" · ")
 }
+
+private fun formatPodcastPubDate(value: String): String {
+    val trimmed = value.trim()
+    if (trimmed.isBlank()) return ""
+    val date = parsePodcastPubDate(trimmed) ?: return trimmed
+    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss EEEE", Locale.CHINA).apply {
+        timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+    }.format(date)
+}
+
+private fun parsePodcastPubDate(value: String): Date? {
+    val utc = TimeZone.getTimeZone("UTC")
+    val patterns = listOf(
+        PodcastDatePattern("EEE, dd MMM yyyy HH:mm:ss Z"),
+        PodcastDatePattern("EEE, d MMM yyyy HH:mm:ss Z"),
+        PodcastDatePattern("EEE, dd MMM yyyy HH:mm:ss zzz"),
+        PodcastDatePattern("EEE, d MMM yyyy HH:mm:ss zzz"),
+        PodcastDatePattern("EEE, dd MMM yyyy HH:mm Z"),
+        PodcastDatePattern("EEE, d MMM yyyy HH:mm Z"),
+        PodcastDatePattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", utc),
+        PodcastDatePattern("yyyy-MM-dd'T'HH:mm:ss'Z'", utc),
+        PodcastDatePattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
+        PodcastDatePattern("yyyy-MM-dd'T'HH:mm:ssXXX"),
+        PodcastDatePattern("yyyy-MM-dd HH:mm:ss", TimeZone.getTimeZone("Asia/Shanghai"))
+    )
+    return patterns.firstNotNullOfOrNull { datePattern ->
+        runCatching {
+            SimpleDateFormat(datePattern.pattern, Locale.US).apply {
+                isLenient = false
+                datePattern.timeZone?.let { timeZone = it }
+            }.parse(value)
+        }.getOrNull()
+    }
+}
+
+private data class PodcastDatePattern(
+    val pattern: String,
+    val timeZone: TimeZone? = null
+)
 
 private fun PodcastLibraryEpisode.toAudioQueueItem(): AudioQueueItem {
     val imageUrl = episode.imageUrl.ifBlank { feedImageUrl }

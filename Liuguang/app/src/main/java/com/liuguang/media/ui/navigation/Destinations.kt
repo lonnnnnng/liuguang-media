@@ -12,7 +12,7 @@ object Destinations {
     const val SEARCH = "search"
     const val SEARCH_RESULT = "search_result/{keyword}"
     const val DETAIL = "detail/{siteId}/{vodId}"
-    const val EPISODE_PLAYER = "episode_player/{siteId}/{vodId}/{episodeUrl}?title={title}&episodeLabel={episodeLabel}"
+    const val EPISODE_PLAYER = "episode_player/{siteId}/{vodId}/{episodeUrl}?title={title}&episodeLabel={episodeLabel}&startPositionMs={startPositionMs}"
     const val LIVE_PLAYER = "live_player/{url}?title={title}&group={group}&format={format}&sourceId={sourceId}"
     const val RADIO_PLAYER = "radio_player/{url}?title={title}&group={group}&codec={codec}&bitrate={bitrate}&logo={logo}&sourceId={sourceId}"
     const val HISTORY = "history"
@@ -27,12 +27,13 @@ object Destinations {
         vodId: String,
         episodeUrl: String,
         title: String = "",
-        episodeLabel: String = ""
+        episodeLabel: String = "",
+        startPositionMs: Long = 0L
     ): String {
         val encodedUrl = Uri.encode(episodeUrl)
         val encodedTitle = Uri.encode(title)
         val encodedEpisodeLabel = Uri.encode(episodeLabel)
-        return "episode_player/$siteId/$vodId/$encodedUrl?title=$encodedTitle&episodeLabel=$encodedEpisodeLabel"
+        return "episode_player/$siteId/$vodId/$encodedUrl?title=$encodedTitle&episodeLabel=$encodedEpisodeLabel&startPositionMs=$startPositionMs"
     }
 
     fun livePlayer(

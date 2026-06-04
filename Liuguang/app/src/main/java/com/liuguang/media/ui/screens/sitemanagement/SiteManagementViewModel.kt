@@ -33,6 +33,8 @@ import javax.inject.Inject
 
 data class SiteImportUiState(
     val isImporting: Boolean = false,
+    val currentIndex: Int = 0,
+    val total: Int = 0,
     val message: String? = null
 )
 
@@ -138,12 +140,16 @@ class SiteManagementViewModel @Inject constructor(
         if (trimmedUrl.isBlank() || _importUiState.value.isImporting) return
 
         viewModelScope.launch {
-            _importUiState.value = SiteImportUiState(isImporting = true, message = null)
+            _importUiState.value = SiteImportUiState(
+                isImporting = true,
+                message = "正在读取视频源配置"
+            )
             val result = importRepository.importFromUrl(trimmedUrl)
             result.fold(
                 onSuccess = { importResult ->
                     val existingSites = siteRepository.getAllSites()
                     val existingUrls = existingSites.map { it.apiUrl.normalizeApiUrl() }.toSet()
+                    val existingDefault = existingSites.any { it.isDefault }
                     val maxOrder = existingSites.maxOfOrNull { it.sortOrder } ?: 0
                     val newSites = importResult.sites
                         .filterNot { it.apiUrl.normalizeApiUrl() in existingUrls }
@@ -153,15 +159,30 @@ class SiteManagementViewModel @Inject constructor(
                                 apiUrl = imported.apiUrl,
                                 enabled = true,
                                 sortOrder = maxOrder + index + 1,
-                                lastCheckStatus = "未检测"
+                                lastCheckStatus = "未检测",
+                                isDefault = !existingDefault && index == 0
                             )
                         }
-                    if (newSites.isNotEmpty()) {
-                        siteRepository.insertSites(newSites)
+                    _importUiState.value = SiteImportUiState(
+                        isImporting = true,
+                        currentIndex = 0,
+                        total = newSites.size,
+                        message = "正在导入视频源"
+                    )
+                    newSites.forEachIndexed { index, site ->
+                        siteRepository.insertSite(site)
+                        _importUiState.value = SiteImportUiState(
+                            isImporting = true,
+                            currentIndex = index + 1,
+                            total = newSites.size,
+                            message = "正在导入视频源"
+                        )
                     }
                     val skippedCount = importResult.sites.size - newSites.size
                     _importUiState.value = SiteImportUiState(
                         isImporting = false,
+                        currentIndex = newSites.size,
+                        total = newSites.size,
                         message = "已识别 ${importResult.format} 配置，新增 ${newSites.size} 个源，跳过重复 ${skippedCount} 个。"
                     )
                 },
@@ -295,11 +316,11 @@ class SiteManagementViewModel @Inject constructor(
     }
 
     fun consumeImportMessage() {
-        _importUiState.value = _importUiState.value.copy(message = null)
+        _importUiState.value = SiteImportUiState()
     }
 
     fun consumeBatchCheckMessage() {
-        _batchCheckUiState.value = _batchCheckUiState.value.copy(message = null)
+        _batchCheckUiState.value = BatchCheckUiState()
     }
 
     private fun buildSuccessDialog(

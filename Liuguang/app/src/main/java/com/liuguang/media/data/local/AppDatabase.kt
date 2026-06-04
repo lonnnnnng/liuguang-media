@@ -23,7 +23,7 @@ import com.liuguang.media.data.local.entity.VideoSiteEntity
         RadioSourceEntity::class,
         PodcastSubscriptionEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -36,29 +36,6 @@ abstract class AppDatabase : RoomDatabase() {
     class Callback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            // 插入默认视频源
-            db.execSQL("""
-                INSERT INTO video_sites (name, apiUrl, enabled, sortOrder, lastCheckStatus, lastCheckTime, lastLatencyMs, isDefault)
-                VALUES
-                ('无尽资源', 'https://api.wujinapi.me/api.php/provide/vod/', 1, 1, '可播放', 0, 0, 1),
-                ('量子资源', 'https://cj.lziapi.com/api.php/provide/vod/', 1, 2, '未检测', 0, 0, 0),
-                ('非凡资源', 'https://cj.ffzyapi.com/api.php/provide/vod/', 1, 3, '未检测', 0, 0, 0)
-            """)
-
-            // 插入默认直播源
-            db.execSQL("""
-                INSERT INTO live_sources (name, url, enabled, sortOrder, lastCheckStatus, lastCheckTime)
-                VALUES
-                ('IPTV直播源', '${DefaultSources.DEFAULT_LIVE_SOURCE_URL}', 1, 1, '未检测', 0),
-                ('播放测试源', '${DefaultSources.PLAYBACK_TEST_LIVE_SOURCE_URL}', 1, 2, '可播放', 0)
-            """)
-
-            db.execSQL("""
-                INSERT INTO radio_sources (name, url, enabled, sortOrder, lastCheckStatus, lastCheckTime)
-                VALUES
-                ('热门网络电台', '${DefaultSources.DEFAULT_RADIO_SOURCE_URL}', 1, 1, '未检测', 0),
-                ('中文网络电台', '${DefaultSources.RADIO_BROWSER_CHINA_SOURCE_URL}', 1, 2, '未检测', 0)
-            """)
         }
     }
 
@@ -198,6 +175,35 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE podcast_subscriptions ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1")
                 db.execSQL("ALTER TABLE podcast_subscriptions ADD COLUMN lastCheckStatus TEXT NOT NULL DEFAULT '未检测'")
                 db.execSQL("ALTER TABLE podcast_subscriptions ADD COLUMN lastCheckTime INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    DELETE FROM video_sites
+                    WHERE apiUrl IN (
+                        'https://api.wujinapi.me/api.php/provide/vod/',
+                        'https://cj.lziapi.com/api.php/provide/vod/',
+                        'https://cj.ffzyapi.com/api.php/provide/vod/'
+                    )
+                """)
+                db.execSQL("""
+                    DELETE FROM live_sources
+                    WHERE url IN (
+                        '${DefaultSources.DEFAULT_LIVE_SOURCE_URL}',
+                        '${DefaultSources.PLAYBACK_TEST_LIVE_SOURCE_URL}',
+                        '${DefaultSources.LEGACY_DEFAULT_LIVE_SOURCE_URL}',
+                        '${DefaultSources.LEGACY_IPV6_LIVE_SOURCE_URL}'
+                    )
+                """)
+                db.execSQL("""
+                    DELETE FROM radio_sources
+                    WHERE url IN (
+                        '${DefaultSources.DEFAULT_RADIO_SOURCE_URL}',
+                        '${DefaultSources.RADIO_BROWSER_CHINA_SOURCE_URL}'
+                    )
+                """)
             }
         }
     }

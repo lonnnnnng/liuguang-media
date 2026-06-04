@@ -3,7 +3,6 @@ package com.liuguang.media.data.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.liuguang.media.data.local.DefaultSources
 import com.liuguang.media.data.local.dao.RadioSourceDao
 import com.liuguang.media.data.local.entity.RadioSourceEntity
 import com.liuguang.media.domain.model.RadioStation
@@ -66,9 +65,6 @@ class RadioRepository @Inject constructor(
 
     suspend fun resetToDefaults() {
         radioSourceDao.clearAll()
-        DefaultSources.radioSources.forEach { source ->
-            radioSourceDao.insert(source)
-        }
         stationCache.clear()
     }
 

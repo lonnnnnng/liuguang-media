@@ -1,7 +1,6 @@
 package com.liuguang.media.data.repository
 
 import com.liuguang.media.data.local.dao.VideoSiteDao
-import com.liuguang.media.data.local.DefaultSources
 import com.liuguang.media.data.local.entity.VideoSiteEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -33,9 +32,6 @@ class SiteRepository @Inject constructor(
 
     suspend fun resetToDefaults() {
         siteDao.clearAll()
-        DefaultSources.videoSites.forEach { site ->
-            siteDao.insert(site)
-        }
     }
 
     suspend fun moveSiteUp(site: VideoSiteEntity, allSites: List<VideoSiteEntity>) {

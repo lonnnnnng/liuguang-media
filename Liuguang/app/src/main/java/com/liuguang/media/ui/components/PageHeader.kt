@@ -33,13 +33,14 @@ fun PageHeader(
     onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 12.dp,
-    topPadding: Dp = 10.dp,
-    bottomPadding: Dp = 14.dp,
+    topPadding: Dp = 7.dp,
+    bottomPadding: Dp = 8.dp,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .background(AppColors.SurfaceRaised)
             .padding(
                 start = horizontalPadding,
                 top = topPadding,
@@ -53,7 +54,7 @@ fun PageHeader(
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(40.dp)
                     .shadow(
                         elevation = 8.dp,
                         shape = CircleShape,
@@ -68,7 +69,7 @@ fun PageHeader(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "返回",
                     tint = AppColors.Primary,
-                    modifier = Modifier.size(21.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

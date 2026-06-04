@@ -93,6 +93,9 @@ class PlayerViewModel @Inject constructor(
     val episodeUrl: String = savedStateHandle.get<String>("episodeUrl") ?: ""
     private val title: String = savedStateHandle.get<String>("title").orEmpty()
     private val episodeLabel: String = savedStateHandle.get<String>("episodeLabel").orEmpty()
+    private val startPositionMs: Long = savedStateHandle.get<Long>("startPositionMs")
+        ?.coerceAtLeast(0L)
+        ?: 0L
 
     private data class PlaybackCandidate(
         val siteId: Long,
@@ -157,6 +160,7 @@ class PlayerViewModel @Inject constructor(
     private var episodeNavigationRequestKey = ""
     private var isRecoveringPlayback = false
     private var networkSpeedUpdateJob: Job? = null
+    private var pendingInitialSeekMs = startPositionMs
     private val transferSamples = ArrayDeque<TransferSample>()
     private val transferSamplesLock = Any()
 
@@ -200,6 +204,7 @@ class PlayerViewModel @Inject constructor(
                 }
                 Player.STATE_READY -> {
                     _duration.value = playerManager.getDuration().coerceAtLeast(0L)
+                    seekToPendingInitialPosition()
                     val sourceName = playbackCandidates.getOrNull(currentCandidateIndex)?.sourceName ?: "线路"
                     _playbackUiState.value = PlaybackUiState(
                         sourceName = sourceName,
@@ -418,6 +423,23 @@ class PlayerViewModel @Inject constructor(
         )
         Log.d(TAG, "playCandidate - index=$index, source=${candidate.sourceName}, label=${candidate.episodeLabel}, url=${candidate.url}")
         playerManager.play(candidate.url)
+    }
+
+    private fun seekToPendingInitialPosition() {
+        val targetPosition = pendingInitialSeekMs
+        val durationMs = _duration.value
+        if (targetPosition <= 0L || durationMs <= 0L) return
+
+        val safePosition = targetPosition.coerceIn(0L, (durationMs - 1_000L).coerceAtLeast(0L))
+        if (safePosition <= 0L) {
+            pendingInitialSeekMs = 0L
+            return
+        }
+
+        Log.d(TAG, "seekToPendingInitialPosition - position=${safePosition}ms")
+        pendingInitialSeekMs = 0L
+        playerManager.seekTo(safePosition)
+        _currentPosition.value = safePosition
     }
 
     private fun recoverFromPlaybackError(error: PlaybackException) {

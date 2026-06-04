@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,8 +46,10 @@ import com.liuguang.media.domain.model.LiveChannel
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.CinemaLoading
 import com.liuguang.media.ui.components.CinemaMessage
+import com.liuguang.media.ui.components.MediaFilterAction
+import com.liuguang.media.ui.components.MediaFilterHeader
+import com.liuguang.media.ui.components.MediaFilterOption
 import com.liuguang.media.ui.components.NetworkImage
-import com.liuguang.media.ui.components.CinemaSearchInput
 import com.liuguang.media.ui.theme.AppColors
 
 @Composable
@@ -87,25 +88,26 @@ fun LiveScreen(
             }
             else -> {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(AppColors.Shell)
-                    ) {
-                        LiveSearchRow(
-                            searchQuery = searchQuery,
-                            onSearchChange = viewModel::setSearchQuery
+                    MediaFilterHeader(
+                        searchPlaceholder = "搜索频道",
+                        searchValue = searchQuery,
+                        onSearchValueChange = viewModel::setSearchQuery,
+                        filters = liveFilterOptions(groups),
+                        selectedFilterKey = selectedGroup,
+                        onFilterSelected = { key ->
+                            if (key == null) {
+                                viewModel.showAllChannels()
+                            } else {
+                                viewModel.selectGroup(key)
+                            }
+                        },
+                        leadingAction = MediaFilterAction(
+                            label = "换源",
+                            icon = Icons.Default.MoreVert,
+                            contentDescription = "切换直播源：$currentSourceName",
+                            onClick = { showSourceSelector = true }
                         )
-
-                        SourceTabs(
-                            labels = groups.ifEmpty { listOf("央视", "卫视", "体育", "电影", "少儿") },
-                            selected = selectedGroup,
-                            currentSourceName = currentSourceName,
-                            onSourceClick = { showSourceSelector = true },
-                            onAllClick = viewModel::showAllChannels,
-                            onClick = { group -> viewModel.selectGroup(if (group == selectedGroup) null else group) }
-                        )
-                    }
+                    )
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -204,133 +206,12 @@ fun LiveScreen(
     }
 }
 
-@Composable
-private fun LiveSearchRow(
-    searchQuery: String,
-    onSearchChange: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 14.dp, top = 8.dp, end = 14.dp, bottom = 0.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        CinemaSearchInput(
-            value = searchQuery,
-            placeholder = "搜索频道",
-            onValueChange = onSearchChange,
-            modifier = Modifier.fillMaxWidth(),
-            horizontalPadding = 0.dp
-        )
-    }
-}
-
-@Composable
-private fun LiveSourceChip(
-    sourceName: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(AppColors.PrimaryLight)
-            .border(1.dp, AppColors.Primary.copy(alpha = 0.42f), RoundedCornerShape(4.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = "切换直播源：$sourceName",
-            tint = AppColors.Primary,
-            modifier = Modifier.size(15.dp)
-        )
-        Text(
-            text = "换源",
-            color = AppColors.Primary,
-            fontSize = 12.sp,
-            lineHeight = 15.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun SourceTabs(
-    labels: List<String>,
-    selected: String?,
-    currentSourceName: String,
-    onSourceClick: () -> Unit,
-    onAllClick: () -> Unit,
-    onClick: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp)
-            .padding(top = 2.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        LiveSourceChip(
-            sourceName = currentSourceName,
-            onClick = onSourceClick
-        )
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            item {
-                SourceTabChip(
-                    label = "全部",
-                    active = selected == null,
-                    onClick = onAllClick
-                )
-            }
-            items(
-                items = labels.take(10),
-                key = { label -> label },
-                contentType = { "live-group-chip" }
-            ) { label ->
-                SourceTabChip(
-                    label = label,
-                    active = label == selected,
-                    onClick = { onClick(label) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SourceTabChip(
-    label: String,
-    active: Boolean,
-    onClick: () -> Unit
-) {
-    Text(
-        text = label,
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(if (active) AppColors.Primary else AppColors.Surface)
-            .then(
-                if (active) {
-                    Modifier
-                } else {
-                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        color = if (active) AppColors.OnPrimary else AppColors.TextPrimary,
-        fontSize = 12.sp,
-        lineHeight = 15.sp,
-        fontWeight = FontWeight.Bold,
-        maxLines = 1
-    )
+private fun liveFilterOptions(groups: List<String>): List<MediaFilterOption> {
+    val fallbackGroups = listOf("央视", "卫视", "体育", "电影", "少儿")
+    return listOf(MediaFilterOption(null, "全部")) +
+        groups.ifEmpty { fallbackGroups }
+            .take(10)
+            .map { group -> MediaFilterOption(group, group) }
 }
 
 @Composable

@@ -120,11 +120,12 @@ fun EpisodePlayerScreen(
     episodeUrl: String,
     title: String,
     episodeLabel: String,
+    startPositionMs: Long = 0L,
     onNavigateBack: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
     @Suppress("UNUSED_VARIABLE")
-    val unusedRouteArgs = Triple(siteId, vodId, episodeUrl)
+    val unusedRouteArgs = listOf(siteId, vodId, episodeUrl, startPositionMs)
     val context = LocalContext.current
     val clipboardManager = remember(context) {
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -243,8 +244,8 @@ fun EpisodePlayerScreen(
                         title = episodeTopBarTitle(title, saveEpisodeLabel),
                         onBackClick = leavePlayer,
                         horizontalPadding = 14.dp,
-                        topPadding = 10.dp,
-                        bottomPadding = 12.dp
+                        topPadding = 7.dp,
+                        bottomPadding = 8.dp
                     )
 
                     PlayerSurface(
@@ -706,8 +707,8 @@ fun LivePlayerScreen(
                         title = title.ifBlank { "直播频道" },
                         onBackClick = leavePlayer,
                         horizontalPadding = 14.dp,
-                        topPadding = 10.dp,
-                        bottomPadding = 12.dp
+                        topPadding = 7.dp,
+                        bottomPadding = 8.dp
                     )
 
                     PlayerSurface(
@@ -1034,8 +1035,8 @@ fun RadioPlayerScreen(
                 title = title.ifBlank { "网络电台" },
                 onBackClick = leavePlayer,
                 horizontalPadding = 14.dp,
-                topPadding = 10.dp,
-                bottomPadding = 12.dp
+                topPadding = 7.dp,
+                bottomPadding = 8.dp
             )
 
             Column(

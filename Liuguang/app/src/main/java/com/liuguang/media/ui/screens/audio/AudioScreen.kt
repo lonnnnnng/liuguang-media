@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,12 +58,6 @@ fun AudioScreen(
 ) {
     var selectedTabName by rememberSaveable { mutableStateOf(AudioTab.Radio.name) }
     val selectedTab = AudioTab.valueOf(selectedTabName)
-
-    LaunchedEffect(selectedTab) {
-        if (selectedTab == AudioTab.Podcast) {
-            podcastViewModel.refreshLibraryIfNeeded()
-        }
-    }
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {

@@ -88,56 +88,60 @@ fun DetailScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 18.dp),
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = {
                         PageHeader(
                             title = vodDetail.vod_name,
                             onBackClick = onNavigateBack,
-                            horizontalPadding = 0.dp,
-                            topPadding = 10.dp,
-                            bottomPadding = 0.dp
+                            horizontalPadding = 18.dp,
+                            topPadding = 7.dp,
+                            bottomPadding = 8.dp
                         )
 
-                        DetailOverviewCard(
-                            source = selectedSource,
-                            selectedGroup = selectedGroup,
-                            body = detailBody
-                        )
-
-                        if (state.sourceOptions.isNotEmpty()) {
-                            DetailProviderSection(
-                                options = state.sourceOptions,
-                                selectedKey = selectedSource.key,
-                                isLoading = state.isLoadingSources,
-                                onSourceSelect = viewModel::selectSource
+                        Column(
+                            modifier = Modifier.padding(horizontal = 18.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            DetailOverviewCard(
+                                source = selectedSource,
+                                selectedGroup = selectedGroup,
+                                body = detailBody
                             )
-                        }
 
-                        if (episodeGroups.isNotEmpty()) {
-                            DetailSourceSection(
-                                groups = episodeGroups,
-                                selectedGroupName = selectedGroup?.name,
-                                onGroupSelect = { selectedGroupName = it }
-                            )
-                        }
-
-                        DetailEpisodesSection(
-                            episodes = selectedGroup?.episodes.orEmpty(),
-                            selectedGroupName = selectedGroup?.name ?: "默认线路",
-                            onEpisodeClick = { episode ->
-                                onNavigateToPlayer(
-                                    selectedSource.siteId,
-                                    selectedSource.vodId,
-                                    episode.url,
-                                    vodDetail.vod_name,
-                                    episode.label
+                            if (state.sourceOptions.isNotEmpty()) {
+                                DetailProviderSection(
+                                    options = state.sourceOptions,
+                                    selectedKey = selectedSource.key,
+                                    isLoading = state.isLoadingSources,
+                                    onSourceSelect = viewModel::selectSource
                                 )
                             }
-                        )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                            if (episodeGroups.isNotEmpty()) {
+                                DetailSourceSection(
+                                    groups = episodeGroups,
+                                    selectedGroupName = selectedGroup?.name,
+                                    onGroupSelect = { selectedGroupName = it }
+                                )
+                            }
+
+                            DetailEpisodesSection(
+                                episodes = selectedGroup?.episodes.orEmpty(),
+                                selectedGroupName = selectedGroup?.name ?: "默认线路",
+                                onEpisodeClick = { episode ->
+                                    onNavigateToPlayer(
+                                        selectedSource.siteId,
+                                        selectedSource.vodId,
+                                        episode.url,
+                                        vodDetail.vod_name,
+                                        episode.label
+                                    )
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
                     }
                 )
             }
@@ -439,10 +443,15 @@ private fun DetailEpisodesSection(
     selectedGroupName: String,
     onEpisodeClick: (EpisodeItem) -> Unit
 ) {
+    var ascending by remember(episodes) { mutableStateOf(true) }
+    val visibleEpisodes = if (ascending) episodes else episodes.asReversed()
+
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        DetailRailHead(
-            title = "剧集列表",
-            meta = "$selectedGroupName · ${episodes.size}集"
+        DetailEpisodesHead(
+            selectedGroupName = selectedGroupName,
+            episodeCount = episodes.size,
+            ascending = ascending,
+            onAscendingChange = { ascending = it }
         )
 
         if (episodes.isEmpty()) {
@@ -460,7 +469,7 @@ private fun DetailEpisodesSection(
             return@Column
         }
 
-        episodes.chunked(5).forEach { rowEpisodes ->
+        visibleEpisodes.chunked(5).forEach { rowEpisodes ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -477,6 +486,85 @@ private fun DetailEpisodesSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DetailEpisodesHead(
+    selectedGroupName: String,
+    episodeCount: Int,
+    ascending: Boolean,
+    onAscendingChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "剧集列表",
+            color = AppColors.TextPrimary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Black
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DetailSortPill(
+                text = "正序",
+                selected = ascending,
+                onClick = { onAscendingChange(true) }
+            )
+            DetailSortPill(
+                text = "倒序",
+                selected = !ascending,
+                onClick = { onAscendingChange(false) }
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = "$selectedGroupName · ${episodeCount}集",
+            color = AppColors.TextTertiary,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun DetailSortPill(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(if (selected) AppColors.Primary else AppColors.Surface)
+            .then(
+                if (selected) {
+                    Modifier
+                } else {
+                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (selected) AppColors.OnPrimary else AppColors.TextPrimary,
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1
+        )
     }
 }
 

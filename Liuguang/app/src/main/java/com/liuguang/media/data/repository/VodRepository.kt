@@ -115,6 +115,7 @@ class VodRepository @Inject constructor(
             val response = withTimeout(timeoutMs.milliseconds) {
                 apiService.getVodList(
                     url = baseUrl,
+                    ac = "list",
                     page = 1
                 )
             }

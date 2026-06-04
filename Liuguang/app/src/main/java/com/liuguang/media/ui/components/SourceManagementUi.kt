@@ -19,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,6 +44,8 @@ import java.util.Locale
 
 data class SourceImportUiState(
     val isImporting: Boolean = false,
+    val currentIndex: Int = 0,
+    val total: Int = 0,
     val message: String? = null
 )
 
@@ -87,6 +90,9 @@ fun SourceManagementTopActionButton(
 fun SourceManagementStatusBanner(
     modifier: Modifier = Modifier,
     message: String,
+    progress: Float? = null,
+    indeterminateProgress: Boolean = false,
+    showDismiss: Boolean = true,
     onDismiss: () -> Unit
 ) {
     Surface(
@@ -96,25 +102,70 @@ fun SourceManagementStatusBanner(
         shape = RoundedCornerShape(6.dp),
         border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.22f))
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Text(
-                text = message,
-                modifier = Modifier.weight(1f),
-                fontSize = 11.5.sp,
-                lineHeight = 15.sp,
-                color = AppColors.TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            TextButton(onClick = onDismiss) {
-                Text("关闭", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 11.5.sp,
+                    lineHeight = 15.sp,
+                    color = AppColors.TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (showDismiss) {
+                    TextButton(onClick = onDismiss) {
+                        Text("关闭", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            if (progress != null) {
+                LinearProgressIndicator(
+                    progress = { progress.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = AppColors.Primary,
+                    trackColor = AppColors.SurfaceRaised
+                )
+            } else if (indeterminateProgress) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = AppColors.Primary,
+                    trackColor = AppColors.SurfaceRaised
+                )
             }
         }
     }
+}
+
+@Composable
+fun SourceOperationProgress(
+    message: String,
+    currentIndex: Int,
+    total: Int,
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    val progress = when {
+        total <= 0 -> null
+        else -> currentIndex.toFloat() / total.toFloat()
+    }
+    SourceManagementStatusBanner(
+        modifier = modifier,
+        message = if (total > 0) "$message (${currentIndex.coerceAtMost(total)}/$total)" else message,
+        progress = progress,
+        indeterminateProgress = total <= 0,
+        showDismiss = false,
+        onDismiss = {}
+    )
 }
 
 @Composable

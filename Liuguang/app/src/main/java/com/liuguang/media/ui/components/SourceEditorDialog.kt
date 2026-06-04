@@ -152,16 +152,18 @@ fun SourceUrlEditorDialog(
 fun SourceBulkImportDialog(
     title: String,
     description: String,
+    initialValue: String = "",
     placeholder: String,
     helperText: String,
     icon: ImageVector,
     isImporting: Boolean,
+    bottomContent: (@Composable ColumnScope.() -> Unit)? = null,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
     SourceUrlEditorDialog(
         title = title,
-        initialUrl = "",
+        initialUrl = initialValue,
         description = description,
         urlLabel = "导入内容",
         urlPlaceholder = placeholder,
@@ -170,6 +172,7 @@ fun SourceBulkImportDialog(
         confirmText = "导入",
         isConfirming = isImporting,
         dismissEnabled = !isImporting,
+        bottomContent = bottomContent,
         onDismiss = onDismiss,
         onConfirm = onConfirm
     )

@@ -165,6 +165,39 @@ class PodcastRepository @Inject constructor(
         }
     }
 
+    suspend fun fetchPodcastImportList(
+        url: String,
+        timeoutMs: Long = 10_000L
+    ): Result<String> = withContext(Dispatchers.IO) {
+        val trimmedUrl = url.trim()
+        if (!trimmedUrl.startsWith("http", ignoreCase = true)) {
+            return@withContext Result.failure(IllegalArgumentException("请输入有效的清单 URL"))
+        }
+
+        try {
+            val request = Request.Builder()
+                .url(trimmedUrl)
+                .header("User-Agent", "Liuguang/1.0 Android Podcast Import")
+                .build()
+            okHttpClient.newCall(request).apply {
+                timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
+            }.execute().use { response ->
+                val content = response.body?.string().orEmpty()
+                when {
+                    !response.isSuccessful -> Result.failure(
+                        IllegalStateException("清单请求失败：HTTP ${response.code}")
+                    )
+                    content.isBlank() -> Result.failure(
+                        IllegalStateException("清单内容为空")
+                    )
+                    else -> Result.success(content)
+                }
+            }
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
+
     suspend fun checkPodcastSource(
         url: String,
         timeoutMs: Long = 10_000L

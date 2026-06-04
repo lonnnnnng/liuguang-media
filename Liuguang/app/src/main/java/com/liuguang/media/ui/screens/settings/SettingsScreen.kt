@@ -136,12 +136,6 @@ fun SettingsScreen(
                         onClick = onNavigateToOnline
                     )
                     SettingsItem(
-                        icon = Icons.Default.RssFeed,
-                        title = "播客源管理",
-                        subtitle = "管理 RSS 订阅源、刷新与删除",
-                        onClick = onNavigateToPodcastSourceManagement
-                    )
-                    SettingsItem(
                         icon = Icons.Default.VideoLibrary,
                         title = "视频源管理",
                         subtitle = "资源站排序、检测、启用状态",
@@ -160,6 +154,12 @@ fun SettingsScreen(
                         onClick = onNavigateToRadioSourceManagement,
                     )
                     SettingsItem(
+                        icon = Icons.Default.RssFeed,
+                        title = "播客源管理",
+                        subtitle = "管理 RSS 订阅源、刷新与删除",
+                        onClick = onNavigateToPodcastSourceManagement
+                    )
+                    SettingsItem(
                         icon = Icons.Default.Download,
                         title = "检测更新",
                         subtitle = if (updateUiState.isChecking) {
@@ -172,7 +172,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.RestartAlt,
                         title = "重置应用",
-                        subtitle = "清除缓存、恢复默认数据源",
+                        subtitle = "清空历史和全部源",
                         onClick = { showResetDialog = true }
                     )
                     SettingsItem(
@@ -255,7 +255,7 @@ fun SettingsScreen(
             titleContentColor = AppColors.TextPrimary,
             textContentColor = AppColors.TextSecondary,
             title = { Text("重置应用") },
-            text = { Text("确定要清空播放历史，并恢复默认视频源和直播源吗？") },
+            text = { Text("确定要清空播放历史和全部源吗？") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.resetApp()

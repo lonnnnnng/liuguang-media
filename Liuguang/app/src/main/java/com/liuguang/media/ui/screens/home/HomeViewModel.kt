@@ -3,10 +3,12 @@ package com.liuguang.media.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.liuguang.media.data.local.entity.VideoSiteEntity
+import com.liuguang.media.data.remote.VodClass
 import com.liuguang.media.data.remote.VodItem
 import com.liuguang.media.data.repository.SiteRepository
 import com.liuguang.media.data.repository.VodRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +33,11 @@ data class HomeVodItem(
     val sourceNames: List<String> = sources.map { it.siteName }.distinct()
     val key: String = groupKey
 }
+
+data class HomeCategory(
+    val id: Int,
+    val name: String
+)
 
 sealed class HomeUiState {
     object Loading : HomeUiState()
@@ -60,6 +67,7 @@ class HomeViewModel @Inject constructor(
         val site: VideoSiteEntity,
         val page: Int,
         val items: List<HomeVodSource>,
+        val categories: List<HomeCategory>,
         val hasMore: Boolean,
         val error: Throwable?
     )
@@ -67,12 +75,19 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _categories = MutableStateFlow<List<HomeCategory>>(emptyList())
+    val categories: StateFlow<List<HomeCategory>> = _categories.asStateFlow()
+
+    private val _selectedCategoryId = MutableStateFlow<Int?>(null)
+    val selectedCategoryId: StateFlow<Int?> = _selectedCategoryId.asStateFlow()
+
     private var isLoadingVodList = false
     private var homeSiteSnapshot: VideoSiteEntity? = null
     private var homeSiteSignature: String? = null
     private var nextPage = 1
     private var hasMore = true
     private var hasStartedInitialLoad = false
+    private var loadCategoriesJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -84,6 +99,9 @@ class HomeViewModel @Inject constructor(
                 if (signature != homeSiteSignature) {
                     homeSiteSignature = signature
                     homeSiteSnapshot = homeSite
+                    loadCategoriesJob?.cancel()
+                    _selectedCategoryId.value = null
+                    _categories.value = emptyList()
                     resetPaging()
                     _uiState.value = HomeUiState.Loading
                     if (hasStartedInitialLoad) {
@@ -119,6 +137,11 @@ class HomeViewModel @Inject constructor(
                     _uiState.value = HomeUiState.Empty
                     return@launch
                 }
+
+                scheduleLoadCategories(
+                    homeSite = homeSite,
+                    forceRefresh = isRefresh
+                )
 
                 if (isRefresh) {
                     resetPaging()
@@ -156,6 +179,13 @@ class HomeViewModel @Inject constructor(
         loadVodList(isRefresh = true)
     }
 
+    fun selectCategory(categoryId: Int?) {
+        if (_selectedCategoryId.value == categoryId) return
+        _selectedCategoryId.value = categoryId
+        resetPaging()
+        loadVodList(isRefresh = true)
+    }
+
     private suspend fun loadHomeSitePage(
         homeSite: VideoSiteEntity,
         isRefresh: Boolean,
@@ -172,12 +202,16 @@ class HomeViewModel @Inject constructor(
         val result = loadSitePage(
             site = homeSite,
             page = if (isRefresh) 1 else nextPage,
+            typeId = _selectedCategoryId.value,
             forceRefresh = isRefresh
         )
 
         if (result.error == null) {
             nextPage = result.page + 1
             hasMore = result.hasMore
+            if (result.categories.isNotEmpty() && _categories.value.isEmpty()) {
+                _categories.value = result.categories
+            }
         } else {
             hasMore = false
         }
@@ -217,11 +251,13 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadSitePage(
         site: VideoSiteEntity,
         page: Int,
+        typeId: Int?,
         forceRefresh: Boolean
     ): SitePageResult {
         return vodRepository.getVodList(
             baseUrl = site.apiUrl,
             page = page,
+            typeId = typeId,
             forceRefresh = forceRefresh
         ).fold(
             onSuccess = { response ->
@@ -241,6 +277,7 @@ class HomeViewModel @Inject constructor(
                     site = site,
                     page = page,
                     items = items,
+                    categories = response.toHomeCategories(),
                     hasMore = hasMore,
                     error = null
                 )
@@ -250,11 +287,28 @@ class HomeViewModel @Inject constructor(
                     site = site,
                     page = page,
                     items = emptyList(),
+                    categories = emptyList(),
                     hasMore = false,
                     error = error
                 )
             }
         )
+    }
+
+    private fun scheduleLoadCategories(
+        homeSite: VideoSiteEntity,
+        forceRefresh: Boolean
+    ) {
+        if (!forceRefresh && _categories.value.isNotEmpty()) return
+        if (loadCategoriesJob?.isActive == true) return
+        loadCategoriesJob = viewModelScope.launch {
+            vodRepository.getCategories(homeSite.apiUrl).onSuccess { response ->
+                val categories = response.toHomeCategories()
+                if (categories.isNotEmpty() && homeSiteSnapshot?.id == homeSite.id) {
+                    _categories.value = categories
+                }
+            }
+        }
     }
 
     private fun toHomeVodItems(sources: List<HomeVodSource>): List<HomeVodItem> {
@@ -273,5 +327,27 @@ class HomeViewModel @Inject constructor(
     private fun resetPaging() {
         nextPage = 1
         hasMore = true
+    }
+
+    private fun List<VodClass>.toHomeCategories(): List<HomeCategory> {
+        return mapNotNull { vodClass ->
+            val name = vodClass.type_name.trim()
+            if (name.isBlank()) return@mapNotNull null
+            HomeCategory(id = vodClass.type_id, name = name)
+        }.distinctBy { it.id }
+    }
+
+    private fun com.liuguang.media.data.remote.VodApiResponse.toHomeCategories(): List<HomeCategory> {
+        return `class`.orEmpty().toHomeCategories()
+            .ifEmpty { list.orEmpty().vodItemsToHomeCategories() }
+    }
+
+    private fun List<VodItem>.vodItemsToHomeCategories(): List<HomeCategory> {
+        return mapNotNull { vod ->
+            val id = vod.type_id ?: return@mapNotNull null
+            val name = vod.type_name?.trim().orEmpty()
+            if (name.isBlank()) return@mapNotNull null
+            HomeCategory(id = id, name = name)
+        }.distinctBy { it.id }
     }
 }

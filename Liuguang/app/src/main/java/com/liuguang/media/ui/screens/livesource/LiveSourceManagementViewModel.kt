@@ -79,7 +79,6 @@ class LiveSourceManagementViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _importUiState.value = SourceImportUiState(isImporting = true)
             val existingSources = liveRepository.getAllSources()
             val existingUrls = existingSources.map { it.url.normalizeSourceUrl() }.toSet()
             val maxOrder = existingSources.maxOfOrNull { it.sortOrder } ?: 0
@@ -93,11 +92,25 @@ class LiveSourceManagementViewModel @Inject constructor(
                         sortOrder = maxOrder + index + 1
                     )
                 }
-            if (newSources.isNotEmpty()) {
-                liveRepository.insertSources(newSources)
+            _importUiState.value = SourceImportUiState(
+                isImporting = true,
+                currentIndex = 0,
+                total = newSources.size,
+                message = "正在导入直播源"
+            )
+            newSources.forEachIndexed { index, source ->
+                liveRepository.insertSource(source)
+                _importUiState.value = SourceImportUiState(
+                    isImporting = true,
+                    currentIndex = index + 1,
+                    total = newSources.size,
+                    message = "正在导入直播源"
+                )
             }
             _importUiState.value = SourceImportUiState(
                 isImporting = false,
+                currentIndex = newSources.size,
+                total = newSources.size,
                 message = "新增 ${newSources.size} 个，跳过重复 ${parsedSources.size - newSources.size} 个"
             )
         }
@@ -253,11 +266,11 @@ class LiveSourceManagementViewModel @Inject constructor(
     }
 
     fun consumeImportMessage() {
-        _importUiState.value = _importUiState.value.copy(message = null)
+        _importUiState.value = SourceImportUiState()
     }
 
     fun consumeBatchMessage() {
-        _batchUiState.value = _batchUiState.value.copy(message = null)
+        _batchUiState.value = SourceBatchUiState()
     }
 
     private fun buildSuccessDialog(

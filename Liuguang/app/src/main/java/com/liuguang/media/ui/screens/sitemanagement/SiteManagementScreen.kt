@@ -1,5 +1,6 @@
 package com.liuguang.media.ui.screens.sitemanagement
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +48,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.liuguang.media.data.local.DefaultSources
 import com.liuguang.media.data.local.entity.VideoSiteEntity
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.PageHeader
@@ -54,8 +58,8 @@ import com.liuguang.media.ui.components.SourceEditorDialog
 import com.liuguang.media.ui.components.SourceManagementEmptyState
 import com.liuguang.media.ui.components.SourceManagementIconButton
 import com.liuguang.media.ui.components.SourceManagementMeta
-import com.liuguang.media.ui.components.SourceManagementStatusBanner
 import com.liuguang.media.ui.components.SourceManagementTopActionButton
+import com.liuguang.media.ui.components.SourceOperationProgress
 import com.liuguang.media.ui.components.SourcePrimaryActionButton
 import com.liuguang.media.ui.components.SourceUrlEditorDialog
 import com.liuguang.media.ui.theme.AppColors
@@ -63,14 +67,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val DEFAULT_VIDEO_SITE_IMPORT_URL =
-    "https://raw.githubusercontent.com/MayLabPro/VideoSource/main/lite.json"
-
 @Composable
 fun SiteManagementScreen(
     onNavigateBack: () -> Unit,
     viewModel: SiteManagementViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val sites by viewModel.sites.collectAsState()
     val checkingSiteId by viewModel.checkingSiteId.collectAsState()
     val batchCheckingSiteIds by viewModel.batchCheckingSiteIds.collectAsState()
@@ -83,6 +85,25 @@ fun SiteManagementScreen(
     var deletingSite by remember { mutableStateOf<VideoSiteEntity?>(null) }
     var showClearDialog by remember { mutableStateOf(false) }
     val isBusy = checkingSiteId != null || importUiState.isImporting || batchCheckUiState.isChecking
+
+    LaunchedEffect(importUiState.isImporting, importUiState.message) {
+        val message = importUiState.message ?: return@LaunchedEffect
+        if (!importUiState.isImporting) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            if (isImportSuccessMessage(message)) {
+                showImportDialog = false
+            }
+            viewModel.consumeImportMessage()
+        }
+    }
+
+    LaunchedEffect(batchCheckUiState.isChecking, batchCheckUiState.message) {
+        val message = batchCheckUiState.message ?: return@LaunchedEffect
+        if (!batchCheckUiState.isChecking) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.consumeBatchCheckMessage()
+        }
+    }
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -119,19 +140,24 @@ fun SiteManagementScreen(
                 }
             )
 
-            val statusMessage = batchCheckUiState.takeIf { it.isChecking }?.let {
-                "${it.message.orEmpty()} (${it.currentIndex}/${it.total})"
-            } ?: batchCheckUiState.message ?: importUiState.message
-            statusMessage?.let { message ->
-                SourceManagementStatusBanner(
+            if (batchCheckUiState.isChecking) {
+                SourceOperationProgress(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
-                    message = message,
-                    onDismiss = {
-                        viewModel.consumeImportMessage()
-                        viewModel.consumeBatchCheckMessage()
-                    }
+                    message = batchCheckUiState.message ?: "正在检测视频源",
+                    currentIndex = batchCheckUiState.currentIndex,
+                    total = batchCheckUiState.total
+                )
+            } else if (checkingSiteId != null) {
+                val checkingSiteName = sites.firstOrNull { it.id == checkingSiteId }?.name ?: "视频源"
+                SourceOperationProgress(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    message = "正在检测：$checkingSiteName",
+                    currentIndex = 0,
+                    total = 0
                 )
             }
 
@@ -181,10 +207,12 @@ fun SiteManagementScreen(
     if (showImportDialog) {
         VideoSiteImportDialog(
             isImporting = importUiState.isImporting,
+            currentIndex = importUiState.currentIndex,
+            total = importUiState.total,
+            progressMessage = importUiState.message,
             onDismiss = { showImportDialog = false },
             onConfirm = { url ->
                 viewModel.importSitesFromUrl(url)
-                showImportDialog = false
             }
         )
     }
@@ -238,7 +266,7 @@ fun SiteManagementScreen(
     if (showClearDialog) {
         ConfirmDialog(
             title = "清空视频源",
-            message = "确定要清空所有视频源吗？可在设置页重置应用恢复默认源。",
+            message = "确定要清空所有视频源吗？删除后可通过批量导入重新添加。",
             onDismiss = { showClearDialog = false },
             onConfirm = {
                 viewModel.clearAllSites()
@@ -450,6 +478,10 @@ private fun formatCheckTime(timestamp: Long): String {
     return SourceCheckTimeFormatter.get().format(Date(timestamp))
 }
 
+private fun isImportSuccessMessage(message: String): Boolean {
+    return message.startsWith("新增") || message.startsWith("已识别")
+}
+
 private object SourceCheckTimeFormatter {
     private val formatter = ThreadLocal<SimpleDateFormat>()
 
@@ -463,22 +495,34 @@ private object SourceCheckTimeFormatter {
 @Composable
 private fun VideoSiteImportDialog(
     isImporting: Boolean,
+    currentIndex: Int,
+    total: Int,
+    progressMessage: String?,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var url by remember { mutableStateOf(DEFAULT_VIDEO_SITE_IMPORT_URL) }
+    var url by remember { mutableStateOf(DefaultSources.DEFAULT_VIDEO_IMPORT_URL) }
 
     SourceUrlEditorDialog(
         title = "导入视频源",
         initialUrl = url,
         description = "读取 lite.json 配置中的 name 和 api 字段，并自动跳过已存在地址。",
         urlLabel = "配置地址",
-        urlPlaceholder = DEFAULT_VIDEO_SITE_IMPORT_URL,
+        urlPlaceholder = DefaultSources.DEFAULT_VIDEO_IMPORT_URL,
         helperText = "支持从远程 URL 导入视频源配置，长链接可直接粘贴。",
         icon = Icons.Default.Link,
         confirmText = "导入",
         isConfirming = isImporting,
         dismissEnabled = !isImporting,
+        bottomContent = {
+            if (isImporting) {
+                SourceOperationProgress(
+                    message = progressMessage ?: "正在导入视频源",
+                    currentIndex = currentIndex,
+                    total = total
+                )
+            }
+        },
         onDismiss = onDismiss,
         onConfirm = { value ->
             url = value

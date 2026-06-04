@@ -1,7 +1,6 @@
 package com.liuguang.media.data.repository
 
 import com.liuguang.media.data.local.dao.LiveSourceDao
-import com.liuguang.media.data.local.DefaultSources
 import com.liuguang.media.data.local.entity.LiveSourceEntity
 import com.liuguang.media.domain.model.LiveChannel
 import kotlin.time.Duration.Companion.milliseconds
@@ -57,9 +56,6 @@ class LiveRepository @Inject constructor(
 
     suspend fun resetToDefaults() {
         liveSourceDao.clearAll()
-        DefaultSources.liveSources.forEach { source ->
-            liveSourceDao.insert(source)
-        }
     }
 
     suspend fun moveSourceUp(source: LiveSourceEntity, allSources: List<LiveSourceEntity>) {

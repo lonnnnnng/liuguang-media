@@ -41,7 +41,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.CinemaMessage
-import com.liuguang.media.ui.components.CinemaSearchPill
+import com.liuguang.media.ui.components.MediaFilterHeader
+import com.liuguang.media.ui.components.MediaFilterOption
 import com.liuguang.media.ui.components.NetworkImage
 import com.liuguang.media.ui.components.ShimmerEffect
 import com.liuguang.media.ui.theme.AppColors
@@ -54,6 +55,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val categories by viewModel.categories.collectAsState()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
     val listState = rememberLazyListState()
     val successState = uiState as? HomeUiState.Success
     val successRows = remember(successState?.vodList) {
@@ -93,6 +96,9 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 HomeFixedHeader(
+                    categories = categories,
+                    selectedCategoryId = selectedCategoryId,
+                    onCategorySelected = viewModel::selectCategory,
                     onSearchClick = onNavigateToSearch
                 )
 
@@ -239,20 +245,24 @@ private fun HomeLoadMoreFooter(
 
 @Composable
 private fun HomeFixedHeader(
+    categories: List<HomeCategory>,
+    selectedCategoryId: Int?,
+    onCategorySelected: (Int?) -> Unit,
     onSearchClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(AppColors.Shell)
-            .padding(start = 16.dp, top = 10.dp, end = 16.dp, bottom = 12.dp)
-    ) {
-        CinemaSearchPill(
-            text = "搜索片名、演员、年份",
-            horizontalPadding = 0.dp,
-            onClick = onSearchClick
-        )
+    val filters = remember(categories) {
+        listOf(MediaFilterOption(key = null, label = "全部")) +
+            categories.map { category ->
+                MediaFilterOption(key = category.id.toString(), label = category.name)
+            }
     }
+    MediaFilterHeader(
+        searchPlaceholder = "搜索片名、演员、年份",
+        onSearchClick = onSearchClick,
+        filters = filters,
+        selectedFilterKey = selectedCategoryId?.toString(),
+        onFilterSelected = { key -> onCategorySelected(key?.toIntOrNull()) }
+    )
 }
 
 @Composable

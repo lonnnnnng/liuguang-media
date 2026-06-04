@@ -127,17 +127,48 @@ class PodcastViewModel @Inject constructor(
         }
     }
 
-    fun importSubscriptions(rawText: String) {
+    fun importSubscriptions(importUrl: String) {
         if (_importUiState.value.isImporting || _batchUiState.value.isRunning) return
 
-        val parsedUrls = parseNamedSourceLines(rawText, "播客源").map { it.second }
-        if (parsedUrls.isEmpty()) {
-            _importUiState.value = SourceImportUiState(message = "未识别到有效播客源")
+        val trimmedImportUrl = importUrl.trim()
+        if (trimmedImportUrl.isBlank()) {
+            _importUiState.value = SourceImportUiState(message = "请输入清单 URL")
+            return
+        }
+        if (!trimmedImportUrl.startsWith("http", ignoreCase = true)) {
+            _importUiState.value = SourceImportUiState(message = "请输入有效的清单 URL")
             return
         }
 
         viewModelScope.launch {
-            _importUiState.value = SourceImportUiState(isImporting = true, message = null)
+            _importUiState.value = SourceImportUiState(isImporting = true, message = "正在获取播客源清单")
+
+            val rawText = podcastRepository.fetchPodcastImportList(trimmedImportUrl).fold(
+                onSuccess = { it },
+                onFailure = { error ->
+                    _importUiState.value = SourceImportUiState(
+                        isImporting = false,
+                        message = error.message ?: "清单获取失败"
+                    )
+                    return@launch
+                }
+            )
+
+            val parsedUrls = parseNamedSourceLines(rawText, "播客源").map { it.second }
+            if (parsedUrls.isEmpty()) {
+                _importUiState.value = SourceImportUiState(
+                    isImporting = false,
+                    message = "清单中未识别到有效播客源"
+                )
+                return@launch
+            }
+
+            _importUiState.value = SourceImportUiState(
+                isImporting = true,
+                currentIndex = 0,
+                total = parsedUrls.size,
+                message = "正在导入播客源"
+            )
             val existingUrls = podcastRepository.getAllSubscriptions()
                 .map { it.url.normalizeSourceUrl() }
                 .toSet()
@@ -147,7 +178,14 @@ class PodcastViewModel @Inject constructor(
 
             val successCount = AtomicInteger(0)
             val failedCount = AtomicInteger(0)
+            val completedCount = AtomicInteger(0)
             val semaphore = Semaphore(PODCAST_REFRESH_PARALLELISM)
+            _importUiState.value = SourceImportUiState(
+                isImporting = true,
+                currentIndex = 0,
+                total = urls.size,
+                message = "正在导入播客源"
+            )
             coroutineScope {
                 urls.map { url ->
                     async(Dispatchers.IO) {
@@ -156,15 +194,21 @@ class PodcastViewModel @Inject constructor(
                                 onSuccess = { successCount.incrementAndGet() },
                                 onFailure = { failedCount.incrementAndGet() }
                             )
+                            val completed = completedCount.incrementAndGet()
+                            _importUiState.value = SourceImportUiState(
+                                isImporting = true,
+                                currentIndex = completed,
+                                total = urls.size,
+                                message = "正在导入播客源"
+                            )
                         }
                     }
                 }.awaitAll()
             }
-            loadLibraryEpisodes().onSuccess { episodes ->
-                _uiState.value = _uiState.value.copy(libraryEpisodes = episodes)
-            }
             _importUiState.value = SourceImportUiState(
                 isImporting = false,
+                currentIndex = urls.size,
+                total = urls.size,
                 message = "新增 ${successCount.get()} 个，失败 ${failedCount.get()} 个，跳过重复 ${parsedUrls.size - urls.size} 个"
             )
         }
@@ -437,6 +481,7 @@ class PodcastViewModel @Inject constructor(
                 isLoadingFeed = true,
                 selectedSubscriptionId = subscription.id,
                 selectedFeed = null,
+                searchQuery = "",
                 message = null
             )
             podcastRepository.fetchPodcastFeed(subscription.url).fold(
@@ -462,6 +507,7 @@ class PodcastViewModel @Inject constructor(
             selectedSubscriptionId = null,
             selectedFeed = null,
             isLoadingFeed = false,
+            searchQuery = "",
             message = null
         )
     }
@@ -492,11 +538,11 @@ class PodcastViewModel @Inject constructor(
     }
 
     fun consumeImportMessage() {
-        _importUiState.value = _importUiState.value.copy(message = null)
+        _importUiState.value = SourceImportUiState()
     }
 
     fun consumeBatchMessage() {
-        _batchUiState.value = _batchUiState.value.copy(message = null)
+        _batchUiState.value = SourceBatchUiState()
     }
 
     private suspend fun loadLibraryEpisodes() = podcastRepository.fetchLibraryEpisodes()

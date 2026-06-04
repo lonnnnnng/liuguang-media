@@ -1,5 +1,6 @@
 package com.liuguang.media.ui.screens.livesource
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,11 +36,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.liuguang.media.data.local.DefaultSources
 import com.liuguang.media.data.local.entity.LiveSourceEntity
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.PageHeader
@@ -49,8 +53,8 @@ import com.liuguang.media.ui.components.SourceCompactEnabledSwitch
 import com.liuguang.media.ui.components.SourceEditorDialog
 import com.liuguang.media.ui.components.SourceManagementEmptyState
 import com.liuguang.media.ui.components.SourceManagementIconButton
-import com.liuguang.media.ui.components.SourceManagementStatusBanner
 import com.liuguang.media.ui.components.SourceManagementTopActionButton
+import com.liuguang.media.ui.components.SourceOperationProgress
 import com.liuguang.media.ui.components.SourcePrimaryActionButton
 import com.liuguang.media.ui.theme.AppColors
 
@@ -59,6 +63,7 @@ fun LiveSourceManagementScreen(
     onNavigateBack: () -> Unit,
     viewModel: LiveSourceManagementViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val sources by viewModel.sources.collectAsState()
     val checkingSourceId by viewModel.checkingSourceId.collectAsState()
     val batchCheckingSourceIds by viewModel.batchCheckingSourceIds.collectAsState()
@@ -71,6 +76,25 @@ fun LiveSourceManagementScreen(
     var deletingSource by remember { mutableStateOf<LiveSourceEntity?>(null) }
     var showClearDialog by remember { mutableStateOf(false) }
     val isBusy = checkingSourceId != null || importUiState.isImporting || batchUiState.isRunning
+
+    LaunchedEffect(importUiState.isImporting, importUiState.message) {
+        val message = importUiState.message ?: return@LaunchedEffect
+        if (!importUiState.isImporting) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            if (message.startsWith("新增")) {
+                showImportDialog = false
+            }
+            viewModel.consumeImportMessage()
+        }
+    }
+
+    LaunchedEffect(batchUiState.isRunning, batchUiState.message) {
+        val message = batchUiState.message ?: return@LaunchedEffect
+        if (!batchUiState.isRunning) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.consumeBatchMessage()
+        }
+    }
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -107,19 +131,24 @@ fun LiveSourceManagementScreen(
                 }
             )
 
-            val statusMessage = batchUiState.takeIf { it.isRunning }?.let {
-                "${it.message.orEmpty()} (${it.currentIndex}/${it.total})"
-            } ?: batchUiState.message ?: importUiState.message
-            statusMessage?.let { message ->
-                SourceManagementStatusBanner(
+            if (batchUiState.isRunning) {
+                SourceOperationProgress(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
-                    message = message,
-                    onDismiss = {
-                        viewModel.consumeImportMessage()
-                        viewModel.consumeBatchMessage()
-                    }
+                    message = batchUiState.message ?: "正在检测直播源",
+                    currentIndex = batchUiState.currentIndex,
+                    total = batchUiState.total
+                )
+            } else if (checkingSourceId != null) {
+                val checkingSourceName = sources.firstOrNull { it.id == checkingSourceId }?.name ?: "直播源"
+                SourceOperationProgress(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    message = "正在检测：$checkingSourceName",
+                    currentIndex = 0,
+                    total = 0
                 )
             }
 
@@ -185,14 +214,23 @@ fun LiveSourceManagementScreen(
         SourceBulkImportDialog(
             title = "批量导入直播源",
             description = "每行一个直播源，支持“名称,URL”；只有 URL 时会自动命名。",
-            placeholder = "央视频道,https://example.com/live.m3u\nhttps://example.com/iptv.m3u",
+            initialValue = DefaultSources.DEFAULT_LIVE_IMPORT_URL,
+            placeholder = DefaultSources.DEFAULT_LIVE_IMPORT_URL,
             helperText = "支持 M3U/M3U8 播放列表地址，自动跳过重复 URL。",
             icon = Icons.Default.LiveTv,
             isImporting = importUiState.isImporting,
+            bottomContent = {
+                if (importUiState.isImporting) {
+                    SourceOperationProgress(
+                        message = importUiState.message ?: "正在导入直播源",
+                        currentIndex = importUiState.currentIndex,
+                        total = importUiState.total
+                    )
+                }
+            },
             onDismiss = { showImportDialog = false },
             onConfirm = { rawText ->
                 viewModel.importSources(rawText)
-                showImportDialog = false
             }
         )
     }

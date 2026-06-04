@@ -10,6 +10,7 @@ import com.liuguang.media.data.repository.HistoryRepository
 import com.liuguang.media.data.repository.LiveRepository
 import com.liuguang.media.data.repository.NetworkSettings
 import com.liuguang.media.data.repository.NetworkSettingsRepository
+import com.liuguang.media.data.repository.PodcastRepository
 import com.liuguang.media.data.repository.RadioRepository
 import com.liuguang.media.data.repository.SiteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,6 +37,7 @@ class SettingsViewModel @Inject constructor(
     private val siteRepository: SiteRepository,
     private val liveRepository: LiveRepository,
     private val radioRepository: RadioRepository,
+    private val podcastRepository: PodcastRepository,
     private val appUpdateRepository: AppUpdateRepository,
     private val networkSettingsRepository: NetworkSettingsRepository
 ) : ViewModel() {
@@ -80,8 +82,9 @@ class SettingsViewModel @Inject constructor(
                 siteRepository.resetToDefaults()
                 liveRepository.resetToDefaults()
                 radioRepository.resetToDefaults()
+                podcastRepository.clearAllSubscriptions()
             }.onSuccess {
-                _maintenanceMessage.value = "已清空播放历史，并恢复默认视频源、直播源与电台源。"
+                _maintenanceMessage.value = "已清空播放历史和全部源。"
             }.onFailure { error ->
                 _maintenanceMessage.value = "重置失败：${error.message ?: "未知错误"}"
             }

@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -238,6 +240,234 @@ fun CinemaSearchInput(
         )
         trailingContent()
     }
+}
+
+data class MediaFilterOption(
+    val key: String?,
+    val label: String
+)
+
+data class MediaFilterAction(
+    val label: String,
+    val icon: ImageVector,
+    val contentDescription: String,
+    val enabled: Boolean = true,
+    val onClick: () -> Unit
+)
+
+@Composable
+fun MediaFilterHeader(
+    searchPlaceholder: String,
+    searchValue: String = "",
+    onSearchValueChange: ((String) -> Unit)? = null,
+    onSearchClick: (() -> Unit)? = null,
+    filters: List<MediaFilterOption>,
+    selectedFilterKey: String?,
+    onFilterSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+    leadingAction: MediaFilterAction? = null,
+    trailingAction: MediaFilterAction? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(AppColors.Shell)
+            .padding(start = 14.dp, top = 8.dp, end = 14.dp, bottom = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MediaSearchField(
+                value = searchValue,
+                placeholder = searchPlaceholder,
+                onValueChange = onSearchValueChange,
+                onClick = onSearchClick,
+                modifier = Modifier.weight(1f)
+            )
+            trailingAction?.let { action ->
+                MediaFilterActionButton(action = action, compact = true)
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            leadingAction?.let { action ->
+                MediaFilterActionButton(action = action)
+            }
+
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = filters,
+                    key = { option -> option.key ?: "__all__" },
+                    contentType = { "media-filter-chip" }
+                ) { option ->
+                    MediaFilterChip(
+                        label = option.label,
+                        selected = option.key == selectedFilterKey,
+                        onClick = { onFilterSelected(option.key) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaSearchField(
+    value: String,
+    placeholder: String,
+    onValueChange: ((String) -> Unit)?,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val focusRequester = remember { FocusRequester() }
+    val canEdit = onValueChange != null
+    Row(
+        modifier = modifier
+            .height(52.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(AppColors.Surface)
+            .border(1.dp, AppColors.DividerStrong, RoundedCornerShape(8.dp))
+            .then(
+                when {
+                    onClick != null -> Modifier.clickable(onClick = onClick)
+                    canEdit -> Modifier.clickable { focusRequester.requestFocus() }
+                    else -> Modifier
+                }
+            )
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = AppColors.TextSecondary,
+            modifier = Modifier.size(21.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+
+        if (canEdit) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange ?: {},
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = AppColors.TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                cursorBrush = Brush.verticalGradient(
+                    colors = listOf(AppColors.Primary, AppColors.Primary)
+                ),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (value.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                color = AppColors.TextSecondary,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+        } else {
+            Text(
+                text = placeholder,
+                modifier = Modifier.weight(1f),
+                color = AppColors.TextSecondary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaFilterActionButton(
+    action: MediaFilterAction,
+    compact: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .height(if (compact) 52.dp else 40.dp)
+            .defaultMinSize(minWidth = if (compact) 52.dp else 80.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(AppColors.PrimaryLight)
+            .border(1.dp, AppColors.Primary.copy(alpha = 0.34f), RoundedCornerShape(8.dp))
+            .clickable(enabled = action.enabled, onClick = action.onClick)
+            .padding(horizontal = if (compact) 0.dp else 12.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = action.icon,
+            contentDescription = action.contentDescription,
+            tint = if (action.enabled) AppColors.Primary else AppColors.TextTertiary,
+            modifier = Modifier.size(if (compact) 22.dp else 18.dp)
+        )
+        if (!compact) {
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = action.label,
+                color = if (action.enabled) AppColors.Primary else AppColors.TextTertiary,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Text(
+        text = label,
+        modifier = Modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) AppColors.Primary else AppColors.Surface)
+            .then(
+                if (selected) {
+                    Modifier
+                } else {
+                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(8.dp))
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        color = if (selected) AppColors.OnPrimary else AppColors.TextPrimary,
+        fontSize = 13.sp,
+        lineHeight = 16.sp,
+        fontWeight = FontWeight.Black,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
 }
 
 @Composable

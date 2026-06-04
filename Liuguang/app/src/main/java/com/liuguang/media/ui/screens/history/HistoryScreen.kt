@@ -3,25 +3,22 @@ package com.liuguang.media.ui.screens.history
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
@@ -29,7 +26,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,7 +49,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.liuguang.media.data.local.entity.HistoryEntity
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.CinemaMessage
-import com.liuguang.media.ui.components.NetworkImage
 import com.liuguang.media.ui.components.PageHeader
 import com.liuguang.media.ui.theme.AppColors
 import java.text.SimpleDateFormat
@@ -61,7 +58,7 @@ import java.util.Locale
 @Composable
 fun HistoryScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToPlayer: (Long, String, String, String, String) -> Unit,
+    onNavigateToPlayer: (Long, String, String, String, String, Long) -> Unit,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val historyList by viewModel.historyList.collectAsState()
@@ -94,14 +91,8 @@ fun HistoryScreen(
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 18.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
-                    item(contentType = "history-overview") {
-                        HistoryOverviewCard(
-                            totalCount = historyList.size,
-                            lastPlayTime = historyList.firstOrNull()?.lastPlayTime
-                        )
-                    }
                     items(
                         items = historyList,
                         key = { history -> history.key },
@@ -109,13 +100,14 @@ fun HistoryScreen(
                     ) { history ->
                         HistoryItem(
                             history = history,
-                            onClick = {
+                            onPlayFrom = { startPositionMs ->
                                 onNavigateToPlayer(
                                     history.siteId,
                                     history.vodId,
                                     history.episodeUrl,
                                     history.vodName,
-                                    history.episodeLabel
+                                    history.episodeLabel,
+                                    startPositionMs
                                 )
                             }
                         )
@@ -153,205 +145,147 @@ fun HistoryScreen(
 @Composable
 private fun HistoryItem(
     history: HistoryEntity,
-    onClick: () -> Unit
+    onPlayFrom: (Long) -> Unit
 ) {
     val progress = history.progress()
     val hasProgress = history.durationMs > 0
+    val resumePositionMs = history.resumePositionMs()
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
+            .clip(RoundedCornerShape(7.dp))
+            .clickable { onPlayFrom(resumePositionMs) },
         color = AppColors.SurfaceSoft,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(7.dp),
         tonalElevation = 0.dp,
         shadowElevation = 1.dp,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
-            modifier = Modifier.padding(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(11.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .width(86.dp)
-                    .height(122.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(AppColors.SurfaceRaised)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                NetworkImage(
-                    url = history.vodPic,
-                    contentDescription = history.vodName,
-                    modifier = Modifier.fillMaxSize()
-                )
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(6.dp),
-                    color = AppColors.Primary,
-                    contentColor = AppColors.OnPrimary,
-                    shape = RoundedCornerShape(999.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (hasProgress) progressLabel(progress) else "续播",
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-                        fontSize = 10.sp,
-                        lineHeight = 12.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 122.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(
                         text = history.vodName,
+                        modifier = Modifier.weight(1f),
                         color = AppColors.TextPrimary,
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp,
-                        lineHeight = 19.sp,
-                        maxLines = 2,
+                        lineHeight = 18.sp,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        HistoryChip(
-                            text = history.episodeLabel,
-                            icon = Icons.Default.PlayArrow,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        HistoryChip(
-                            text = formatTime(history.lastPlayTime),
-                            icon = Icons.Default.Schedule
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (hasProgress) {
-                                "${formatDuration(history.positionMs)} / ${formatDuration(history.durationMs)}"
-                            } else {
-                                "点击继续播放"
-                            },
-                            color = AppColors.TextTertiary,
-                            fontSize = 11.sp,
-                            lineHeight = 13.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Button(
-                            onClick = onClick,
-                            modifier = Modifier.height(36.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary,
-                                contentColor = AppColors.OnPrimary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(17.dp)
-                            )
-                            Text(
-                                text = "继续",
-                                fontSize = 12.sp,
-                                lineHeight = 14.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(999.dp)),
+                    Text(
+                        text = if (hasProgress) progressLabel(progress) else "续播",
                         color = AppColors.Primary,
-                        trackColor = AppColors.SurfaceRaised
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HistoryChip(
+                        text = history.episodeLabel,
+                        icon = Icons.Default.PlayArrow,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    HistoryChip(
+                        text = formatTime(history.lastPlayTime),
+                        icon = Icons.Default.Schedule
+                    )
+                    Text(
+                        text = if (hasProgress) {
+                            "${formatDuration(history.positionMs)} / ${formatDuration(history.durationMs)}"
+                        } else {
+                            "点击继续播放"
+                        },
+                        color = AppColors.TextTertiary,
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                HistoryProgressBar(
+                    progress = progress,
+                    enabled = hasProgress,
+                    onProgressClick = { targetProgress ->
+                        onPlayFrom((history.durationMs * targetProgress).toLong())
+                    }
+                )
+            }
+            Button(
+                onClick = { onPlayFrom(resumePositionMs) },
+                modifier = Modifier.height(34.dp),
+                shape = RoundedCornerShape(6.dp),
+                contentPadding = PaddingValues(horizontal = 9.dp, vertical = 0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.Primary,
+                    contentColor = AppColors.OnPrimary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp)
+                )
+                Text(
+                    text = "继续",
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
+                    fontWeight = FontWeight.Black
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HistoryOverviewCard(
-    totalCount: Int,
-    lastPlayTime: Long?
+private fun HistoryProgressBar(
+    progress: Float,
+    enabled: Boolean,
+    onProgressClick: (Float) -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = AppColors.PrimaryLight,
-        contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.18f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(42.dp),
-                color = AppColors.Surface,
-                contentColor = AppColors.Primary,
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.14f))
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp)
-                    )
+    var widthPx by remember { mutableStateOf(0) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(10.dp)
+            .onSizeChanged { widthPx = it.width }
+            .pointerInput(enabled, widthPx) {
+                if (!enabled || widthPx <= 0) return@pointerInput
+                detectTapGestures { offset ->
+                    onProgressClick((offset.x / widthPx).coerceIn(0f, 1f))
                 }
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = "继续观看",
-                    color = AppColors.TextPrimary,
-                    fontSize = 17.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = buildString {
-                        append("$totalCount 条播放记录")
-                        lastPlayTime?.let {
-                            append(" · 最近")
-                            append(formatTime(it))
-                        }
-                    },
-                    color = AppColors.TextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+            .padding(vertical = 3.dp)
+            .clip(RoundedCornerShape(999.dp))
+            .background(AppColors.SurfaceRaised)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress)
+                .fillMaxSize()
+                .background(AppColors.Primary)
+        )
     }
 }
 
@@ -369,21 +303,21 @@ private fun HistoryChip(
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(13.dp),
+                modifier = Modifier.size(12.dp),
                 tint = AppColors.Primary
             )
             Text(
                 text = text,
                 color = AppColors.TextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 13.sp,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -398,6 +332,11 @@ private fun HistoryEntity.progress(): Float {
     } else {
         0f
     }
+}
+
+private fun HistoryEntity.resumePositionMs(): Long {
+    if (durationMs <= 0L) return 0L
+    return positionMs.coerceIn(0L, (durationMs - 1_000L).coerceAtLeast(0L))
 }
 
 private fun progressLabel(progress: Float): String {

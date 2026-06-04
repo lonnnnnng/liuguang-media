@@ -262,6 +262,10 @@ fun AppNavGraph(
                     navArgument("episodeLabel") {
                         type = NavType.StringType
                         defaultValue = ""
+                    },
+                    navArgument("startPositionMs") {
+                        type = NavType.LongType
+                        defaultValue = 0L
                     }
                 )
             ) { backStackEntry ->
@@ -270,12 +274,14 @@ fun AppNavGraph(
                 val episodeUrl = backStackEntry.arguments?.getString("episodeUrl") ?: ""
                 val title = backStackEntry.arguments?.getString("title").orEmpty()
                 val episodeLabel = backStackEntry.arguments?.getString("episodeLabel").orEmpty()
+                val startPositionMs = backStackEntry.arguments?.getLong("startPositionMs") ?: 0L
                 EpisodePlayerScreen(
                     siteId = siteId,
                     vodId = vodId,
                     episodeUrl = episodeUrl,
                     title = title,
                     episodeLabel = episodeLabel,
+                    startPositionMs = startPositionMs,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -369,9 +375,16 @@ fun AppNavGraph(
             composable(Destinations.HISTORY) {
                 HistoryScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToPlayer = { siteId, vodId, episodeUrl, title, episodeLabel ->
+                    onNavigateToPlayer = { siteId, vodId, episodeUrl, title, episodeLabel, startPositionMs ->
                         navController.navigate(
-                            Destinations.episodePlayer(siteId, vodId, episodeUrl, title, episodeLabel)
+                            Destinations.episodePlayer(
+                                siteId = siteId,
+                                vodId = vodId,
+                                episodeUrl = episodeUrl,
+                                title = title,
+                                episodeLabel = episodeLabel,
+                                startPositionMs = startPositionMs
+                            )
                         )
                     }
                 )

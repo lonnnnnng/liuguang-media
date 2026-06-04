@@ -1,5 +1,6 @@
 package com.liuguang.media.ui.screens.podcast
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,22 +40,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.liuguang.media.data.local.DefaultSources
 import com.liuguang.media.data.local.entity.PodcastSubscriptionEntity
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.PageHeader
-import com.liuguang.media.ui.components.SourceBulkImportDialog
 import com.liuguang.media.ui.components.SourceCheckResultDialog
 import com.liuguang.media.ui.components.SourceCheckStatusMeta
 import com.liuguang.media.ui.components.SourceCompactEnabledSwitch
 import com.liuguang.media.ui.components.SourceManagementEmptyState
 import com.liuguang.media.ui.components.SourceManagementIconButton
-import com.liuguang.media.ui.components.SourceManagementStatusBanner
 import com.liuguang.media.ui.components.SourceManagementTopActionButton
+import com.liuguang.media.ui.components.SourceOperationProgress
 import com.liuguang.media.ui.components.SourcePrimaryActionButton
 import com.liuguang.media.ui.components.SourceUrlEditorDialog
 import com.liuguang.media.ui.theme.AppColors
@@ -67,6 +69,7 @@ fun PodcastSourceManagementScreen(
     onNavigateBack: () -> Unit,
     viewModel: PodcastViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val sources by viewModel.subscriptions.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val checkingSubscriptionId by viewModel.checkingSubscriptionId.collectAsState()
@@ -101,6 +104,39 @@ fun PodcastSourceManagementScreen(
         }
     }
 
+    LaunchedEffect(importUiState.isImporting, importUiState.message) {
+        val message = importUiState.message ?: return@LaunchedEffect
+        if (!importUiState.isImporting) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            if (message.startsWith("新增")) {
+                showImportDialog = false
+            }
+            viewModel.consumeImportMessage()
+        }
+    }
+
+    LaunchedEffect(batchUiState.isRunning, batchUiState.message) {
+        val message = batchUiState.message ?: return@LaunchedEffect
+        if (!batchUiState.isRunning) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.consumeBatchMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.message) {
+        val message = uiState.message ?: return@LaunchedEffect
+        if (isPodcastSourceToastMessage(message)) {
+            if (message.startsWith("已订阅")) {
+                showAddDialog = false
+            }
+            if (message.startsWith("已更新")) {
+                editingSource = null
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.clearMessage()
+        }
+    }
+
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
@@ -115,7 +151,7 @@ fun PodcastSourceManagementScreen(
                     )
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Link,
-                        contentDescription = "批量导入播客源",
+                        contentDescription = "URL导入播客源",
                         enabled = !isBusy,
                         isLoading = importUiState.isImporting,
                         onClick = { showImportDialog = true }
@@ -136,19 +172,24 @@ fun PodcastSourceManagementScreen(
                 }
             )
 
-            val statusMessage = batchUiState.takeIf { it.isRunning }?.let {
-                "${it.message.orEmpty()} (${it.currentIndex}/${it.total})"
-            } ?: batchUiState.message ?: importUiState.message
-            statusMessage?.let { message ->
-                SourceManagementStatusBanner(
+            if (batchUiState.isRunning) {
+                SourceOperationProgress(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
-                    message = message,
-                    onDismiss = {
-                        viewModel.consumeImportMessage()
-                        viewModel.consumeBatchMessage()
-                    }
+                    message = batchUiState.message ?: "正在检测播客源",
+                    currentIndex = batchUiState.currentIndex,
+                    total = batchUiState.total
+                )
+            } else if (checkingSubscriptionId != null) {
+                val checkingSourceName = sources.firstOrNull { it.id == checkingSubscriptionId }?.title ?: "播客源"
+                SourceOperationProgress(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    message = "正在检测：$checkingSourceName",
+                    currentIndex = 0,
+                    total = 0
                 )
             }
 
@@ -156,11 +197,11 @@ fun PodcastSourceManagementScreen(
                 SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = "暂无播客源",
-                    message = "添加 RSS 或 Atom 地址后，音频页会聚合播客节目。",
+                    message = "单个新增栏目地址，或通过清单 URL 导入多个播客栏目。",
                     icon = Icons.Default.RssFeed,
                     primaryActionText = "单个新增",
                     onPrimaryAction = { showAddDialog = true },
-                    secondaryActionText = "批量导入",
+                    secondaryActionText = "URL导入",
                     onSecondaryAction = { showImportDialog = true },
                     actionsEnabled = !isBusy
                 )
@@ -196,7 +237,7 @@ fun PodcastSourceManagementScreen(
 
     if (showAddDialog) {
         PodcastSourceEditorDialog(
-            title = "添加播客源",
+            title = "单个新增播客源",
             initialUrl = "",
             source = null,
             isConfirming = uiState.isAdding,
@@ -206,17 +247,29 @@ fun PodcastSourceManagementScreen(
     }
 
     if (showImportDialog) {
-        SourceBulkImportDialog(
-            title = "批量导入播客源",
-            description = "每行一个播客源地址，支持 RSS / Atom；只有 URL 时会自动解析标题。",
-            placeholder = "https://example.com/podcast/feed.xml\nhttps://example.com/show/rss",
-            helperText = "导入时会解析订阅标题和节目数量，并自动跳过重复 URL。",
-            icon = Icons.Default.RssFeed,
-            isImporting = importUiState.isImporting,
+        SourceUrlEditorDialog(
+            title = "URL导入播客源",
+            initialUrl = DefaultSources.DEFAULT_PODCAST_IMPORT_URL,
+            description = "输入一个远程清单 URL。清单内容应为多行文本，每行一个播客栏目地址。",
+            urlLabel = "清单 URL",
+            urlPlaceholder = DefaultSources.DEFAULT_PODCAST_IMPORT_URL,
+            helperText = "清单支持每行一个 RSS / Atom 地址，也支持“名称,地址”。导入时会自动解析栏目标题、封面和节目数量。",
+            icon = Icons.Default.Link,
+            confirmText = "获取并导入",
+            isConfirming = importUiState.isImporting,
+            dismissEnabled = !importUiState.isImporting,
+            bottomContent = {
+                if (importUiState.isImporting) {
+                    SourceOperationProgress(
+                        message = importUiState.message ?: "正在导入播客源",
+                        currentIndex = importUiState.currentIndex,
+                        total = importUiState.total
+                    )
+                }
+            },
             onDismiss = { showImportDialog = false },
-            onConfirm = { rawText ->
-                viewModel.importSubscriptions(rawText)
-                showImportDialog = false
+            onConfirm = { importUrl ->
+                viewModel.importSubscriptions(importUrl)
             }
         )
     }
@@ -265,7 +318,7 @@ fun PodcastSourceManagementScreen(
         )
     }
 
-    uiState.message?.let { message ->
+    uiState.message?.takeUnless(::isPodcastSourceToastMessage)?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::clearMessage,
             containerColor = AppColors.Surface,
@@ -282,6 +335,14 @@ fun PodcastSourceManagementScreen(
     }
 }
 
+private fun isPodcastSourceToastMessage(message: String): Boolean {
+    return message.startsWith("已订阅") ||
+        message.startsWith("已更新") ||
+        message.startsWith("已刷新") ||
+        message.startsWith("已删除") ||
+        message.startsWith("已清空")
+}
+
 @Composable
 private fun PodcastSourceEditorDialog(
     title: String,
@@ -295,13 +356,13 @@ private fun PodcastSourceEditorDialog(
         title = title,
         initialUrl = initialUrl,
         description = if (source == null) {
-            "添加公开可访问的订阅地址，流光会自动解析节目、封面和更新信息。"
+            "手动输入一个播客栏目的 RSS / Atom 链接地址，保存后会同步栏目和节目数量。"
         } else {
             "修改后会按新地址重新同步播客信息，并保留源列表中的管理入口。"
         },
-        urlLabel = "Feed 地址",
+        urlLabel = "栏目地址",
         urlPlaceholder = "https://example.com/podcast/feed.xml",
-        helperText = "支持 RSS / Atom。长链接可粘贴后多行编辑。",
+        helperText = "单个新增只填写一个播客栏目地址。多个栏目请使用 URL导入。",
         icon = Icons.Default.RssFeed,
         confirmText = if (source == null) "添加并同步" else "保存并刷新",
         isConfirming = isConfirming,
