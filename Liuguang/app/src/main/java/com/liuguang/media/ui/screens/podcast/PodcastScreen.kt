@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -142,6 +144,8 @@ private fun PodcastContent(
     onRefreshSubscriptionClick: (PodcastSubscriptionEntity) -> Unit,
     onEpisodeClick: (PodcastLibraryEpisode) -> Unit
 ) {
+    val subscriptionListState = rememberLazyListState()
+
     Column(modifier = Modifier.fillMaxSize()) {
         if (showHeader) {
             PageHeader(
@@ -176,6 +180,7 @@ private fun PodcastContent(
                 uiState = uiState,
                 sources = sources,
                 contentBottomPadding = contentBottomPadding,
+                listState = subscriptionListState,
                 onSearchChange = onSearchChange,
                 onRefreshClick = onRefreshSourcesClick,
                 onSubscriptionClick = onSubscriptionClick
@@ -189,6 +194,7 @@ private fun PodcastSubscriptionListPage(
     uiState: PodcastUiState,
     sources: List<PodcastSubscriptionEntity>,
     contentBottomPadding: Dp,
+    listState: LazyListState,
     onSearchChange: (String) -> Unit,
     onRefreshClick: () -> Unit,
     onSubscriptionClick: (PodcastSubscriptionEntity) -> Unit
@@ -208,6 +214,7 @@ private fun PodcastSubscriptionListPage(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(top = 8.dp, bottom = contentBottomPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
