@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.PlayArrow
@@ -132,9 +132,9 @@ private fun OnlineIntroCopy() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -180,7 +180,7 @@ private fun OnlineInputField(
         singleLine = false,
         minLines = 4,
         maxLines = 6,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = AppColors.TextPrimary,
             unfocusedTextColor = AppColors.TextPrimary,
@@ -211,7 +211,7 @@ private fun OnlineActionButton(
             .height(48.dp),
         color = if (enabled && !isLoading) AppColors.Primary else AppColors.SurfaceRaised,
         contentColor = if (enabled && !isLoading) AppColors.OnPrimary else AppColors.TextTertiary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, if (enabled && !isLoading) Color.Transparent else AppColors.Divider)
     ) {
         Row(
@@ -242,9 +242,9 @@ private fun OnlineParseResultPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -279,7 +279,7 @@ private fun OnlineChannelRow(
             .height(54.dp),
         color = AppColors.SurfaceAlt,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(

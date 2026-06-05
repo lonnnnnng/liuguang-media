@@ -7,7 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
@@ -112,9 +112,9 @@ fun SearchScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(RectangleShape)
                                 .background(AppColors.Surface)
-                                .border(BorderStroke(1.dp, AppColors.Divider), RoundedCornerShape(4.dp))
+                                .border(BorderStroke(1.dp, AppColors.Divider), RectangleShape)
                                 .clickable {
                                     searchText = keyword
                                     submitSearch(keyword)
@@ -157,7 +157,7 @@ private fun SearchPrimaryButton(
             .padding(horizontal = 18.dp),
         color = if (enabled) AppColors.Primary else AppColors.SurfaceRaised,
         contentColor = if (enabled) AppColors.OnPrimary else AppColors.TextTertiary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, if (enabled) Color.Transparent else AppColors.Divider)
     ) {
         Row(

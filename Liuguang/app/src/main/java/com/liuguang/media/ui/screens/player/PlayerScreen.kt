@@ -35,8 +35,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -316,7 +316,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(42.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         PlayerUtilityButton(
@@ -327,7 +327,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(42.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
                     }
 
@@ -343,7 +343,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         Surface(
@@ -359,7 +359,7 @@ fun EpisodePlayerScreen(
                                 .height(44.dp),
                             color = AppColors.SurfaceAlt,
                             contentColor = AppColors.TextPrimary,
-                            shape = RoundedCornerShape(4.dp),
+                            shape = RectangleShape,
                             border = BorderStroke(1.dp, AppColors.Divider)
                         ) {
                             Row(
@@ -398,7 +398,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
                     }
 
@@ -417,7 +417,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         PlayerUtilityButton(
@@ -427,7 +427,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         PlayerUtilityButton(
@@ -437,7 +437,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         PlayerUtilityButton(
@@ -450,7 +450,7 @@ fun EpisodePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
                     }
                 }
@@ -782,7 +782,7 @@ fun LivePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         PlayerUtilityButton(
@@ -792,7 +792,7 @@ fun LivePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
 
                         Surface(
@@ -808,7 +808,7 @@ fun LivePlayerScreen(
                                 .height(44.dp),
                             color = AppColors.SurfaceAlt,
                             contentColor = AppColors.TextPrimary,
-                            shape = RoundedCornerShape(4.dp),
+                            shape = RectangleShape,
                             border = BorderStroke(1.dp, AppColors.Divider)
                         ) {
                             Row(
@@ -850,7 +850,7 @@ fun LivePlayerScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RectangleShape
                         )
                     }
                 }
@@ -1090,7 +1090,7 @@ fun RadioPlayerScreen(
                             .height(46.dp),
                         color = AppColors.Primary,
                         contentColor = AppColors.OnPrimary,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RectangleShape
                     ) {
                         Row(
                             modifier = Modifier.fillMaxSize(),
@@ -1122,7 +1122,7 @@ fun RadioPlayerScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp),
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RectangleShape
                     )
                 }
             }
@@ -1241,7 +1241,7 @@ private fun RadioHeroPanel(
         modifier = Modifier.fillMaxWidth(),
         color = AppColors.Surface,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
@@ -1252,7 +1252,7 @@ private fun RadioHeroPanel(
             Box(
                 modifier = Modifier
                     .size(92.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RectangleShape)
                     .background(
                         Brush.linearGradient(
                             listOf(
@@ -1261,7 +1261,7 @@ private fun RadioHeroPanel(
                             )
                         )
                     )
-                    .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp)),
+                    .border(1.dp, AppColors.Divider, RectangleShape),
                 contentAlignment = Alignment.Center
             ) {
                 if (logo.isNotBlank()) {
@@ -1385,7 +1385,7 @@ private fun PlayerProgressBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(5.dp)
-            .clip(RoundedCornerShape(4.dp)),
+            .clip(RectangleShape),
         color = AppColors.Primary,
         trackColor = AppColors.SurfaceRaised
     )
@@ -1401,7 +1401,7 @@ private fun FullscreenPlayerBackButton(
         modifier = modifier.size(44.dp),
         color = Color.Black.copy(alpha = 0.46f),
         contentColor = Color.White,
-        shape = CircleShape,
+        shape = RectangleShape,
         border = BorderStroke(
             width = 1.dp,
             color = Color.White.copy(alpha = 0.24f)
@@ -1482,7 +1482,7 @@ private fun EpisodeSourcePill(
     Row(
         modifier = Modifier
             .widthIn(min = 76.dp, max = 126.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(
                 if (option.isCurrent) {
                     Brush.linearGradient(listOf(AppColors.Primary, AppColors.Primary))
@@ -1494,7 +1494,7 @@ private fun EpisodeSourcePill(
                 if (option.isCurrent) {
                     Modifier
                 } else {
-                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                    Modifier.border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
             .clickable(onClick = onClick)
@@ -1592,8 +1592,8 @@ private fun PlayerSurface(
                         .padding(horizontal = 18.dp)
                         .fillMaxWidth()
                         .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(4.dp))
-                        .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                        .clip(RectangleShape)
+                        .border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
             .background(Color.Black)
@@ -1762,7 +1762,7 @@ private fun PlayerSurface(
                         .size(74.dp),
                     color = Color.Black.copy(alpha = 0.54f),
                     contentColor = Color.White,
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RectangleShape,
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -1898,7 +1898,7 @@ private fun PlayerSurface(
                     .size(84.dp),
                 color = Color.Black.copy(alpha = 0.52f),
                 contentColor = Color.White,
-                shape = RoundedCornerShape(6.dp),
+                shape = RectangleShape,
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -1940,7 +1940,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlaybackStatusOverlay(
             .padding(horizontal = 24.dp),
         color = Color.Black.copy(alpha = 0.70f),
         contentColor = Color.White,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(
             1.dp,
             if (state.isFailed) AppColors.Error.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.20f)
@@ -1980,9 +1980,9 @@ private fun PlayerMetaPill(text: String) {
     Text(
         text = text,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.SurfaceAlt)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .padding(horizontal = 8.dp, vertical = 5.dp),
         color = AppColors.TextSecondary,
         fontSize = 11.sp,
@@ -2052,7 +2052,7 @@ private fun PlayerStatsCell(
         modifier = modifier.height(46.dp),
         color = AppColors.SurfaceAlt,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Column(
@@ -2096,7 +2096,7 @@ private fun PlayerSourceLinkRow(
             .height(58.dp),
         color = AppColors.SurfaceAlt,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
@@ -2157,7 +2157,7 @@ private fun LiveLineOptionRow(
             .height(58.dp),
         color = if (option.isCurrent) AppColors.PrimaryLight else AppColors.SurfaceAlt,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(
             1.dp,
             if (option.isCurrent) AppColors.Primary.copy(alpha = 0.42f) else AppColors.Divider
@@ -2212,7 +2212,7 @@ private fun PlayerUtilityButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(4.dp)
+    shape: Shape = RectangleShape
 ) {
     Surface(
         onClick = onClick,
@@ -2265,7 +2265,7 @@ private fun PlayerFullscreenActionButton(
         modifier = modifier,
         color = Color.Black.copy(alpha = 0.46f),
         contentColor = Color.White,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
     ) {
         Row(
@@ -2310,7 +2310,7 @@ private fun GestureOverlay(
         Surface(
             color = Color.Black.copy(alpha = 0.72f),
             contentColor = Color.White,
-            shape = RoundedCornerShape(4.dp)
+            shape = RectangleShape
         ) {
             Column(
                 modifier = Modifier.padding(18.dp),

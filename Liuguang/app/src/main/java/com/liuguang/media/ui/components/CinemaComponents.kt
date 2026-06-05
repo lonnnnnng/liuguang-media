@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -60,7 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.liuguang.media.ui.theme.AppColors
 
-private val CinemaShape = RoundedCornerShape(4.dp)
+private val CinemaShape = RectangleShape
 
 @Composable
 fun CinemaBackground(
@@ -127,9 +127,9 @@ fun CinemaIconButton(
         onClick = onClick,
         modifier = modifier
             .size(44.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
     ) {
         Icon(
             imageVector = icon,
@@ -272,12 +272,12 @@ fun MediaFilterHeader(
         modifier = modifier
             .fillMaxWidth()
             .background(AppColors.Shell)
-            .padding(start = 14.dp, top = 8.dp, end = 14.dp, bottom = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(start = 14.dp, top = 6.dp, end = 14.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             MediaSearchField(
@@ -294,7 +294,7 @@ fun MediaFilterHeader(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             leadingAction?.let { action ->
@@ -303,7 +303,7 @@ fun MediaFilterHeader(
 
             LazyRow(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(
                     items = filters,
@@ -333,10 +333,10 @@ private fun MediaSearchField(
     val canEdit = onValueChange != null
     Row(
         modifier = modifier
-            .height(52.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .height(44.dp)
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.DividerStrong, RoundedCornerShape(8.dp))
+            .border(1.dp, AppColors.DividerStrong, RectangleShape)
             .then(
                 when {
                     onClick != null -> Modifier.clickable(onClick = onClick)
@@ -344,16 +344,16 @@ private fun MediaSearchField(
                     else -> Modifier
                 }
             )
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.Search,
             contentDescription = null,
             tint = AppColors.TextSecondary,
-            modifier = Modifier.size(21.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
         if (canEdit) {
             BasicTextField(
@@ -365,7 +365,7 @@ private fun MediaSearchField(
                 singleLine = true,
                 textStyle = TextStyle(
                     color = AppColors.TextPrimary,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 ),
                 cursorBrush = Brush.verticalGradient(
@@ -380,7 +380,7 @@ private fun MediaSearchField(
                             Text(
                                 text = placeholder,
                                 color = AppColors.TextSecondary,
-                                fontSize = 15.sp,
+                                fontSize = 14.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -394,7 +394,7 @@ private fun MediaSearchField(
                 text = placeholder,
                 modifier = Modifier.weight(1f),
                 color = AppColors.TextSecondary,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -410,13 +410,13 @@ private fun MediaFilterActionButton(
 ) {
     Row(
         modifier = Modifier
-            .height(if (compact) 52.dp else 40.dp)
-            .defaultMinSize(minWidth = if (compact) 52.dp else 80.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .height(if (compact) 44.dp else 34.dp)
+            .defaultMinSize(minWidth = if (compact) 44.dp else 72.dp)
+            .clip(RectangleShape)
             .background(AppColors.PrimaryLight)
-            .border(1.dp, AppColors.Primary.copy(alpha = 0.34f), RoundedCornerShape(8.dp))
+            .border(1.dp, AppColors.Primary.copy(alpha = 0.34f), RectangleShape)
             .clickable(enabled = action.enabled, onClick = action.onClick)
-            .padding(horizontal = if (compact) 0.dp else 12.dp),
+            .padding(horizontal = if (compact) 0.dp else 10.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -424,15 +424,15 @@ private fun MediaFilterActionButton(
             imageVector = action.icon,
             contentDescription = action.contentDescription,
             tint = if (action.enabled) AppColors.Primary else AppColors.TextTertiary,
-            modifier = Modifier.size(if (compact) 22.dp else 18.dp)
+            modifier = Modifier.size(if (compact) 19.dp else 16.dp)
         )
         if (!compact) {
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = action.label,
                 color = if (action.enabled) AppColors.Primary else AppColors.TextTertiary,
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
+                fontSize = 12.sp,
+                lineHeight = 14.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1
             )
@@ -449,21 +449,21 @@ private fun MediaFilterChip(
     Text(
         text = label,
         modifier = Modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .height(34.dp)
+            .clip(RectangleShape)
             .background(if (selected) AppColors.Primary else AppColors.Surface)
             .then(
                 if (selected) {
                     Modifier
                 } else {
-                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(8.dp))
+                    Modifier.border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         color = if (selected) AppColors.OnPrimary else AppColors.TextPrimary,
-        fontSize = 13.sp,
-        lineHeight = 16.sp,
+        fontSize = 12.sp,
+        lineHeight = 14.sp,
         fontWeight = FontWeight.Black,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
@@ -481,20 +481,20 @@ private fun CinemaSearchSurface(
         modifier = modifier
             .padding(horizontal = horizontalPadding)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 14.dp),
+            .padding(horizontal = 11.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.Search,
             contentDescription = null,
             tint = AppColors.TextSecondary,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         content()
     }
 }
@@ -697,7 +697,7 @@ fun CinemaMessage(
                     onClick = onAction,
                     color = AppColors.Primary,
                     contentColor = AppColors.OnPrimary,
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RectangleShape
                 ) {
                     Text(
                         text = actionText,

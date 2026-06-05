@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Headphones
@@ -373,8 +373,8 @@ private fun PodcastSearchHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.Shell)
-            .padding(start = 14.dp, top = 8.dp, end = 14.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(start = 14.dp, top = 6.dp, end = 14.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         CinemaSearchInput(
@@ -401,9 +401,9 @@ private fun PodcastSubscriptionRow(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(5.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(5.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -488,9 +488,9 @@ private fun PodcastFeedHeader(
             onClick = onBackClick,
             modifier = Modifier
                 .size(42.dp)
-                .clip(RoundedCornerShape(5.dp))
+                .clip(RectangleShape)
                 .background(AppColors.Surface)
-                .border(1.dp, AppColors.Divider, RoundedCornerShape(5.dp))
+                .border(1.dp, AppColors.Divider, RectangleShape)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -550,9 +550,9 @@ private fun PodcastEpisodeRow(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -563,7 +563,7 @@ private fun PodcastEpisodeRow(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RectangleShape)
                     .background(
                         Brush.linearGradient(
                             listOf(
@@ -637,7 +637,7 @@ private fun PodcastCover(imageUrl: String, title: String, size: Int) {
     Box(
         modifier = Modifier
             .size(size.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.SurfaceAlt)
     ) {
         NetworkImage(
@@ -654,7 +654,7 @@ private fun PodcastPlaceholderCover(title: String, size: Int) {
     Box(
         modifier = Modifier
             .size(size.dp)
-            .clip(RoundedCornerShape(5.dp))
+            .clip(RectangleShape)
             .background(
                 Brush.linearGradient(
                     listOf(
@@ -680,9 +680,9 @@ private fun PodcastLoadingCard(message: String) {
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .padding(horizontal = 14.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -711,16 +711,16 @@ private fun HeaderActionButton(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .size(40.dp)
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
     ) {
         Icon(
             imageVector = Icons.Default.Refresh,
             contentDescription = contentDescription,
             tint = if (enabled) AppColors.Primary else AppColors.TextTertiary,
-            modifier = Modifier.size(21.dp)
+            modifier = Modifier.size(18.dp)
         )
     }
 }

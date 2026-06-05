@@ -16,21 +16,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,7 +41,6 @@ import com.liuguang.media.domain.model.LiveChannel
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.components.CinemaLoading
 import com.liuguang.media.ui.components.CinemaMessage
-import com.liuguang.media.ui.components.MediaFilterAction
 import com.liuguang.media.ui.components.MediaFilterHeader
 import com.liuguang.media.ui.components.MediaFilterOption
 import com.liuguang.media.ui.components.NetworkImage
@@ -63,16 +57,10 @@ fun LiveScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedGroup by viewModel.selectedGroup.collectAsState()
 
-    var showSourceSelector by remember { mutableStateOf(false) }
     val enabledSources = sources.filter { it.enabled }
     val hasLiveSources = sources.isNotEmpty()
     val hasEnabledLiveSources = enabledSources.isNotEmpty()
     val groups = remember(uiState) { viewModel.getGroups() }
-    val currentSourceName = when {
-        !hasLiveSources -> "暂无直播源"
-        !hasEnabledLiveSources -> "直播源未启用"
-        else -> sources.firstOrNull { it.id == currentSourceId }?.name ?: "选择直播源"
-    }
 
     LaunchedEffect(Unit) {
         viewModel.showAllChannels()
@@ -100,13 +88,7 @@ fun LiveScreen(
                             } else {
                                 viewModel.selectGroup(key)
                             }
-                        },
-                        leadingAction = MediaFilterAction(
-                            label = "换源",
-                            icon = Icons.Default.MoreVert,
-                            contentDescription = "切换直播源：$currentSourceName",
-                            onClick = { showSourceSelector = true }
-                        )
+                        }
                     )
 
                     LazyColumn(
@@ -158,52 +140,6 @@ fun LiveScreen(
             }
         }
     }
-
-    if (showSourceSelector) {
-        AlertDialog(
-            onDismissRequest = { showSourceSelector = false },
-            containerColor = AppColors.Surface,
-            titleContentColor = AppColors.TextPrimary,
-            textContentColor = AppColors.TextSecondary,
-            title = { Text("选择直播源") },
-            text = {
-                Column {
-                    if (enabledSources.isEmpty()) {
-                        Text(
-                            text = if (sources.isEmpty()) {
-                                "暂无直播源，请先添加直播源。"
-                            } else {
-                                "暂无启用的直播源，请先启用直播源。"
-                            },
-                            color = AppColors.TextSecondary,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp
-                        )
-                    } else {
-                        enabledSources.forEach { source ->
-                            TextButton(
-                                onClick = {
-                                    viewModel.selectSource(source.id)
-                                    showSourceSelector = false
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = source.name,
-                                    color = if (source.id == currentSourceId) AppColors.Primary else AppColors.TextPrimary
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSourceSelector = false }) {
-                    Text("取消")
-                }
-            }
-        )
-    }
 }
 
 private fun liveFilterOptions(groups: List<String>): List<MediaFilterOption> {
@@ -223,9 +159,9 @@ private fun ChannelRow(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -233,7 +169,7 @@ private fun ChannelRow(
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RectangleShape)
                 .background(
                     Brush.linearGradient(
                         listOf(
@@ -242,7 +178,7 @@ private fun ChannelRow(
                         )
                     )
                 )
-                .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(4.dp)),
+                .border(1.dp, Color.White.copy(alpha = 0.16f), RectangleShape),
             contentAlignment = Alignment.Center
         ) {
             if (channel.logo.isNotBlank()) {

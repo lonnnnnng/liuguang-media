@@ -12,8 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -99,7 +98,7 @@ fun SourceManagementStatusBanner(
         modifier = modifier,
         color = AppColors.Primary.copy(alpha = 0.10f),
         contentColor = AppColors.Primary,
-        shape = RoundedCornerShape(6.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.22f))
     ) {
         Column(
@@ -189,7 +188,7 @@ fun SourceManagementEmptyState(
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp),
             color = AppColors.Surface,
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             border = BorderStroke(1.dp, AppColors.Divider)
         ) {
             Column(
@@ -201,7 +200,7 @@ fun SourceManagementEmptyState(
                     modifier = Modifier.size(48.dp),
                     color = AppColors.PrimaryLight,
                     contentColor = AppColors.Primary,
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RectangleShape,
                     border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.18f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -242,7 +241,7 @@ fun SourceManagementEmptyState(
                         modifier = Modifier
                             .weight(1f)
                             .height(42.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RectangleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.Primary,
                             contentColor = AppColors.OnPrimary,
@@ -259,7 +258,7 @@ fun SourceManagementEmptyState(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(42.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RectangleShape,
                             border = BorderStroke(1.dp, AppColors.DividerStrong),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = AppColors.TextSecondary,
@@ -293,7 +292,7 @@ fun SourceCompactEnabledSwitch(
             .size(width = 34.dp, height = 19.dp)
             .clickable(enabled = enabled, onClick = onToggle),
         color = trackColor,
-        shape = RoundedCornerShape(10.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, if (checked) AppColors.Primary else AppColors.DividerStrong)
     ) {
         Box(
@@ -306,7 +305,7 @@ fun SourceCompactEnabledSwitch(
                     .size(15.dp)
                     .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart),
                 color = thumbColor,
-                shape = CircleShape
+                shape = RectangleShape
             ) {}
         }
     }

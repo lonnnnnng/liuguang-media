@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
@@ -257,7 +257,7 @@ private fun HomeFixedHeader(
             }
     }
     MediaFilterHeader(
-        searchPlaceholder = "搜索片名、演员、年份",
+        searchPlaceholder = "搜索片名",
         onSearchClick = onSearchClick,
         filters = filters,
         selectedFilterKey = selectedCategoryId?.toString(),
@@ -274,21 +274,21 @@ private fun HomeVodPosterSkeleton(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(2f / 3f)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RectangleShape)
         )
         ShimmerEffect(
             modifier = Modifier
                 .padding(top = 8.dp)
                 .fillMaxWidth(0.82f)
                 .height(14.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .clip(RectangleShape)
         )
         ShimmerEffect(
             modifier = Modifier
                 .padding(top = 5.dp)
                 .fillMaxWidth(0.64f)
                 .height(12.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .clip(RectangleShape)
         )
     }
 }
@@ -305,7 +305,7 @@ private fun CinemaVodPoster(
         onClick = onClick,
         color = AppColors.Surface,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(6.dp),
+        shape = RectangleShape,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Divider),
         shadowElevation = 1.dp
     ) {
@@ -318,7 +318,7 @@ private fun CinemaVodPoster(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RectangleShape)
                     .background(AppColors.SurfaceAlt)
             ) {
                 NetworkImage(
@@ -334,7 +334,7 @@ private fun CinemaVodPoster(
                             .padding(6.dp),
                         color = AppColors.Primary,
                         contentColor = AppColors.OnPrimary,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RectangleShape
                     ) {
                         Text(
                             text = vod.vod_remarks,
@@ -364,6 +364,7 @@ private fun CinemaVodPoster(
 @Composable
 private fun HomeVodMetaRow(item: HomeVodItem) {
     val typeName = item.vod.type_name?.takeIf { it.isNotBlank() } ?: "影视"
+    val area = item.vod.vod_area?.takeIf { it.isNotBlank() } ?: "未知"
     val year = item.vod.vod_year?.takeIf { it.isNotBlank() } ?: "在线"
 
     Row(
@@ -375,6 +376,15 @@ private fun HomeVodMetaRow(item: HomeVodItem) {
     ) {
         Text(
             text = typeName,
+            modifier = Modifier.weight(1f),
+            color = AppColors.TextTertiary,
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = area,
             modifier = Modifier.weight(1f),
             color = AppColors.TextTertiary,
             fontSize = 11.sp,

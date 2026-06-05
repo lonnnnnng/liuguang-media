@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -80,7 +80,7 @@ fun SourceCheckResultDialog(
                         AppColors.Error.copy(alpha = 0.10f)
                     },
                     contentColor = if (state.success) AppColors.Primary else AppColors.Error,
-                    shape = RoundedCornerShape(4.dp),
+                    shape = RectangleShape,
                     border = BorderStroke(
                         1.dp,
                         if (state.success) {
@@ -125,9 +125,9 @@ fun SourceCheckResultDialog(
                                     .fillMaxWidth()
                                     .background(
                                         color = AppColors.SurfaceAlt,
-                                        shape = RoundedCornerShape(4.dp)
+                                        shape = RectangleShape
                                     )
-                                    .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                                    .border(1.dp, AppColors.Divider, RectangleShape)
                                     .padding(12.dp),
                                 color = AppColors.TextSecondary,
                                 fontSize = 11.sp,
@@ -151,8 +151,8 @@ private fun SourceCheckSummaryRow(item: SourceCheckSummaryItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(AppColors.SurfaceAlt, RoundedCornerShape(4.dp))
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .background(AppColors.SurfaceAlt, RectangleShape)
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .padding(horizontal = 11.dp, vertical = 9.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {

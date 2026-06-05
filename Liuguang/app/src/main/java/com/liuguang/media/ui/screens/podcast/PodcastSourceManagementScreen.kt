@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
@@ -384,7 +384,7 @@ private fun PodcastEditorGuideCard() {
         modifier = Modifier.fillMaxWidth(),
         color = AppColors.PrimaryLight,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(8.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.16f))
     ) {
         Column(
@@ -399,7 +399,7 @@ private fun PodcastEditorGuideCard() {
                     modifier = Modifier.size(36.dp),
                     color = AppColors.Surface,
                     contentColor = AppColors.Primary,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RectangleShape,
                     border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.14f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -442,7 +442,7 @@ private fun PodcastEditorCurrentCard(source: PodcastSubscriptionEntity) {
         modifier = Modifier.fillMaxWidth(),
         color = AppColors.SurfaceAlt,
         contentColor = AppColors.TextPrimary,
-        shape = RoundedCornerShape(8.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Column(
@@ -515,7 +515,7 @@ private fun PodcastFormatChip(text: String) {
     Surface(
         color = AppColors.Surface,
         contentColor = AppColors.Primary,
-        shape = RoundedCornerShape(999.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.18f))
     ) {
         Row(
@@ -558,7 +558,7 @@ private fun PodcastSourceItem(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = AppColors.Surface,
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Column(

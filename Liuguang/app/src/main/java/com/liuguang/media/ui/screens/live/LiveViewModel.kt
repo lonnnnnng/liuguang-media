@@ -58,8 +58,11 @@ class LiveViewModel @Inject constructor(
                         allGroups = emptyList()
                         _uiState.value = LiveUiState.Empty
                     }
-                    _currentSourceId.value == null || enabledSources.none { it.id == _currentSourceId.value } -> {
-                        selectSource(enabledSources.first().id)
+                    else -> {
+                        val topSourceId = enabledSources.first().id
+                        if (_currentSourceId.value != topSourceId) {
+                            selectSource(topSourceId)
+                        }
                     }
                 }
             }

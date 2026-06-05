@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -204,7 +204,7 @@ private fun SourceEditorFrame(
                 .fillMaxWidth(0.90f)
                 .heightIn(max = 560.dp),
             color = AppColors.Surface,
-            shape = RoundedCornerShape(8.dp),
+            shape = RectangleShape,
             tonalElevation = 0.dp,
             shadowElevation = 10.dp,
             border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.16f))
@@ -262,7 +262,7 @@ private fun SourceEditorHeader(
                 modifier = Modifier.size(38.dp),
                 color = AppColors.PrimaryLight,
                 contentColor = AppColors.OnPrimary,
-                shape = RoundedCornerShape(8.dp),
+                shape = RectangleShape,
                 border = BorderStroke(1.dp, AppColors.Primary.copy(alpha = 0.20f))
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -296,7 +296,7 @@ private fun SourceEditorHeader(
                     Surface(
                         color = AppColors.PrimaryLight,
                         contentColor = AppColors.Primary,
-                        shape = RoundedCornerShape(999.dp)
+                        shape = RectangleShape
                     ) {
                         Text(
                             text = "必填",
@@ -353,7 +353,7 @@ private fun SourceTextField(
         else -> 84.dp
     }
     val supportText = errorText ?: helperText
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RectangleShape
     val borderColor = if (errorText != null) AppColors.Error else AppColors.Divider
     val textStyle = LocalTextStyle.current.copy(
         color = AppColors.TextPrimary,
@@ -464,7 +464,7 @@ private fun SourceEditorActions(
                 modifier = Modifier
                     .weight(1f)
                     .height(42.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RectangleShape,
                 border = BorderStroke(1.dp, AppColors.DividerStrong),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = AppColors.TextSecondary,
@@ -479,7 +479,7 @@ private fun SourceEditorActions(
                 modifier = Modifier
                     .weight(1f)
                     .height(42.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RectangleShape,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.Primary,
                     contentColor = AppColors.OnPrimary,

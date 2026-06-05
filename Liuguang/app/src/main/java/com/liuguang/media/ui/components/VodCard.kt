@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -33,14 +33,14 @@ fun VodCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(Dimens.radiusMedium),
+        shape = RectangleShape,
         colors = CardDefaults.cardColors(
             containerColor = AppColors.Surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(Dimens.radiusMedium))
+            modifier = Modifier.border(1.dp, AppColors.Divider, RectangleShape)
         ) {
             Box(
                 modifier = Modifier
@@ -52,7 +52,7 @@ fun VodCard(
                     contentDescription = title,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = Dimens.radiusMedium, topEnd = Dimens.radiusMedium))
+                        .clip(RectangleShape)
                 )
 
                 if (!remark.isNullOrBlank()) {
@@ -62,7 +62,7 @@ fun VodCard(
                             .padding(Dimens.paddingSmall)
                             .background(
                                 color = AppColors.Primary,
-                                shape = RoundedCornerShape(Dimens.radiusSmall)
+                                shape = RectangleShape
                             )
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
@@ -102,7 +102,7 @@ fun VodCard(
                             end = Dimens.paddingSmall,
                             bottom = Dimens.paddingSmall
                         )
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RectangleShape)
                         .background(AppColors.PrimaryLight)
                         .padding(horizontal = 7.dp, vertical = 3.dp),
                     fontSize = 10.sp,

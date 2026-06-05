@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
@@ -156,11 +157,21 @@ private fun DetailOverviewCard(
     body: String
 ) {
     var moreDialog by remember(source.key) { mutableStateOf<DetailMoreDialog?>(null) }
+    val playableEpisodeCount = source.playableEpisodeCount(selectedGroup)
+    val totalEpisodeCount = source.vodDetail.vod_total?.takeIf { it > 0 }
+        ?: playableEpisodeCount
+    val typeName = source.vodDetail.type_name?.takeIf { it.isNotBlank() } ?: "未知"
+    val releaseDate = source.vodDetail.vod_pubdate?.takeIf { it.isNotBlank() }
+        ?: source.vodDetail.vod_year?.takeIf { it.isNotBlank() }
+        ?: "未知"
+    val updateTime = source.vodDetail.vod_time?.takeIf { it.isNotBlank() }
+        ?: source.vodDetail.vod_time_add?.takeIf { it.isNotBlank() }
+        ?: "未知"
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(
                 Brush.linearGradient(
                     listOf(
@@ -169,7 +180,7 @@ private fun DetailOverviewCard(
                     )
                 )
             )
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .padding(9.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -177,9 +188,9 @@ private fun DetailOverviewCard(
             modifier = Modifier
                 .width(108.dp)
                 .height(166.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RectangleShape)
                 .background(AppColors.SurfaceAlt)
-                .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                .border(1.dp, AppColors.Divider, RectangleShape)
         ) {
             NetworkImage(
                 url = source.vodDetail.vod_pic,
@@ -208,8 +219,10 @@ private fun DetailOverviewCard(
                 text = source.vodDetail.vod_actor?.takeIf { it.isNotBlank() }
                     ?.let { "主演 $it" }
                     ?: source.vodDetail.vod_director?.takeIf { it.isNotBlank() }?.let { "导演 $it" }
-                    ?: "已解析当前播放线路，可直接播放或切换剧集",
+                    ?: "主演信息暂未提供",
                 maxLines = 1,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
                 onMoreClick = { text -> moreDialog = DetailMoreDialog("主演信息", text) }
             )
             Text(
@@ -220,16 +233,23 @@ private fun DetailOverviewCard(
             )
             DetailExpandableText(
                 text = body,
-                maxLines = 4,
+                maxLines = 3,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
                 onMoreClick = { text -> moreDialog = DetailMoreDialog("简介", text) }
             )
             DetailMetaLine(
-                items = listOfNotNull(
+                items = listOf(
                     source.siteName,
-                    source.vodDetail.vod_remarks?.takeIf { it.isNotBlank() } ?: "在线",
-                    source.vodDetail.type_name?.takeIf { it.isNotBlank() },
-                    selectedGroup?.episodes?.size?.takeIf { it > 0 }?.let { "更新至 $it" },
-                    selectedGroup?.name?.takeIf { it.isNotBlank() }
+                    "共 ${totalEpisodeCount ?: 0} 集",
+                    typeName,
+                    detailUpdateLabel(
+                        remarks = source.vodDetail.vod_remarks,
+                        serial = source.vodDetail.vod_serial,
+                        playableEpisodeCount = playableEpisodeCount
+                    ),
+                    "上映日期 $releaseDate",
+                    "更新时间 $updateTime"
                 )
             )
         }
@@ -263,10 +283,28 @@ private data class DetailMoreDialog(
     val content: String
 )
 
+private fun detailUpdateLabel(
+    remarks: String?,
+    serial: String?,
+    playableEpisodeCount: Int?
+): String {
+    val countFromRemarks = Regex("""\d+""").find(remarks?.trim().orEmpty())?.value
+    val countFromSerial = Regex("""\d+""").find(serial?.trim().orEmpty())?.value
+    val count = countFromRemarks ?: countFromSerial ?: playableEpisodeCount?.toString()
+    return if (count != null) "更新至 $count 集" else "更新至 未知"
+}
+
+private fun DetailSourceOption.playableEpisodeCount(selectedGroup: EpisodeGroup? = null): Int? {
+    return selectedGroup?.episodes?.size?.takeIf { it > 0 }
+        ?: episodeGroups.maxOfOrNull { it.episodes.size }?.takeIf { it > 0 }
+}
+
 @Composable
 private fun DetailExpandableText(
     text: String,
     maxLines: Int,
+    fontSize: TextUnit = 12.sp,
+    lineHeight: TextUnit = 16.sp,
     onMoreClick: (String) -> Unit
 ) {
     var overflow by remember(text, maxLines) { mutableStateOf(false) }
@@ -276,8 +314,8 @@ private fun DetailExpandableText(
             text = text,
             modifier = Modifier.weight(1f),
             color = AppColors.TextPrimary.copy(alpha = 0.72f),
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
+            fontSize = fontSize,
+            lineHeight = lineHeight,
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
             onTextLayout = { overflow = it.hasVisualOverflow }
@@ -289,8 +327,8 @@ private fun DetailExpandableText(
                     .padding(start = 6.dp)
                     .clickable { onMoreClick(text) },
                 color = AppColors.Primary,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                fontSize = fontSize,
+                lineHeight = lineHeight,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -320,7 +358,7 @@ private fun DetailProviderSection(
                 val selected = option.key == selectedKey
                 DetailChoicePill(
                     title = option.siteName,
-                    meta = "${option.episodeGroups.sumOf { it.episodes.size }}集",
+                    meta = "${option.playableEpisodeCount() ?: 0}集",
                     selected = selected,
                     minWidth = 64.dp,
                     onClick = { onSourceSelect(option.key) }
@@ -391,7 +429,7 @@ private fun DetailChoicePill(
     Row(
         modifier = Modifier
             .widthIn(min = minWidth, max = 156.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(
                 if (selected) {
                     Brush.linearGradient(listOf(AppColors.Primary, AppColors.Primary))
@@ -408,7 +446,7 @@ private fun DetailChoicePill(
                 if (selected) {
                     Modifier
                 } else {
-                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                    Modifier.border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
             .clickable(onClick = onClick)
@@ -459,9 +497,9 @@ private fun DetailEpisodesSection(
                 text = "当前线路暂无可播放剧集",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RectangleShape)
                     .background(AppColors.Surface)
-                    .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                    .border(1.dp, AppColors.Divider, RectangleShape)
                     .padding(14.dp),
                 color = AppColors.TextTertiary,
                 fontSize = 12.sp
@@ -544,13 +582,13 @@ private fun DetailSortPill(
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(if (selected) AppColors.Primary else AppColors.Surface)
             .then(
                 if (selected) {
                     Modifier
                 } else {
-                    Modifier.border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+                    Modifier.border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
             .clickable(onClick = onClick)
@@ -577,7 +615,7 @@ private fun DetailEpisodeButton(
     Box(
         modifier = modifier
             .height(26.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(
                 Brush.linearGradient(
                     listOf(
@@ -586,7 +624,7 @@ private fun DetailEpisodeButton(
                     )
                 )
             )
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 2.dp),
         contentAlignment = Alignment.Center

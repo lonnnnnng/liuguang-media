@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
@@ -253,9 +253,9 @@ private fun RadioStationRow(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.Divider, RoundedCornerShape(4.dp))
+            .border(1.dp, AppColors.Divider, RectangleShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -263,7 +263,7 @@ private fun RadioStationRow(
         Box(
             modifier = Modifier
                 .size(38.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RectangleShape)
                 .background(
                     Brush.linearGradient(
                         listOf(
@@ -272,7 +272,7 @@ private fun RadioStationRow(
                         )
                     )
                 )
-                .border(1.dp, Color.White.copy(alpha = 0.20f), RoundedCornerShape(4.dp)),
+                .border(1.dp, Color.White.copy(alpha = 0.20f), RectangleShape),
             contentAlignment = Alignment.Center
         ) {
             if (station.logo.isNotBlank()) {

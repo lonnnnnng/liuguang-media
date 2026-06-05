@@ -6,7 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.LiveTv
@@ -474,7 +474,7 @@ private fun FloatingCinemaNavigationBar(
                 .height(58.dp),
             color = AppColors.Surface,
             contentColor = AppColors.TextSecondary,
-            shape = RoundedCornerShape(12.dp),
+            shape = RectangleShape,
             shadowElevation = 2.dp,
             border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Divider)
         ) {
@@ -493,7 +493,7 @@ private fun FloatingCinemaNavigationBar(
                             .fillMaxHeight(),
                         color = if (selected) AppColors.PrimaryLight else Color.Transparent,
                         contentColor = if (selected) AppColors.Primary else AppColors.TextTertiary,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RectangleShape
                     ) {
                         Column(
                             modifier = Modifier.fillMaxSize(),

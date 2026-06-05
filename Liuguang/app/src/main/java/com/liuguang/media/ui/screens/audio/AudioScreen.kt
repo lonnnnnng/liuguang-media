@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Podcasts
 import androidx.compose.material.icons.filled.Radio
@@ -138,9 +138,9 @@ private fun AudioHeader(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, AppColors.Divider, RoundedCornerShape(6.dp)),
+                .border(1.dp, AppColors.Divider, RectangleShape),
             color = AppColors.Surface,
-            shape = RoundedCornerShape(6.dp),
+            shape = RectangleShape,
             shadowElevation = 0.dp
         ) {
             Row(
@@ -171,7 +171,7 @@ private fun AudioTabButton(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(if (selected) AppColors.Primary else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 9.dp),

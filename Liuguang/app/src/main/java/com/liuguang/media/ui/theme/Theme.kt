@@ -1,6 +1,6 @@
 package com.liuguang.media.ui.theme
 
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -27,11 +27,11 @@ private val BrightCinemaColorScheme = lightColorScheme(
 )
 
 private val StableCinemaShapes = Shapes(
-    extraSmall = RoundedCornerShape(4.dp),
-    small = RoundedCornerShape(4.dp),
-    medium = RoundedCornerShape(4.dp),
-    large = RoundedCornerShape(6.dp),
-    extraLarge = RoundedCornerShape(6.dp)
+    extraSmall = CutCornerShape(0.dp),
+    small = CutCornerShape(0.dp),
+    medium = CutCornerShape(0.dp),
+    large = CutCornerShape(0.dp),
+    extraLarge = CutCornerShape(0.dp)
 )
 
 private val HeitiFontFamily = FontFamily.SansSerif

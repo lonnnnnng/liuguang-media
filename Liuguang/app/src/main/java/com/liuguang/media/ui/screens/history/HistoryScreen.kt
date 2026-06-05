@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
@@ -154,10 +154,10 @@ private fun HistoryItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(7.dp))
+            .clip(RectangleShape)
             .clickable { onPlayFrom(resumePositionMs) },
         color = AppColors.SurfaceSoft,
-        shape = RoundedCornerShape(7.dp),
+        shape = RectangleShape,
         tonalElevation = 0.dp,
         shadowElevation = 1.dp,
         border = BorderStroke(1.dp, AppColors.Divider)
@@ -234,7 +234,7 @@ private fun HistoryItem(
             Button(
                 onClick = { onPlayFrom(resumePositionMs) },
                 modifier = Modifier.height(34.dp),
-                shape = RoundedCornerShape(6.dp),
+                shape = RectangleShape,
                 contentPadding = PaddingValues(horizontal = 9.dp, vertical = 0.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.Primary,
@@ -277,7 +277,7 @@ private fun HistoryProgressBar(
                 }
             }
             .padding(vertical = 3.dp)
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RectangleShape)
             .background(AppColors.SurfaceRaised)
     ) {
         Box(
@@ -299,7 +299,7 @@ private fun HistoryChip(
         modifier = modifier,
         color = AppColors.Surface,
         contentColor = AppColors.TextSecondary,
-        shape = RoundedCornerShape(999.dp),
+        shape = RectangleShape,
         border = BorderStroke(1.dp, AppColors.Divider)
     ) {
         Row(
