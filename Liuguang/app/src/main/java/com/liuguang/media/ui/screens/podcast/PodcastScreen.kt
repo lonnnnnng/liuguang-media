@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -577,7 +576,7 @@ private fun PodcastEpisodeRow(
                 Icon(
                     imageVector = Icons.Default.Headphones,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = AppColors.OnMedia,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -668,7 +667,7 @@ private fun PodcastPlaceholderCover(title: String, size: Int) {
         Icon(
             imageVector = Icons.Default.Podcasts,
             contentDescription = title,
-            tint = Color.White,
+            tint = AppColors.OnMedia,
             modifier = Modifier.size((size * 0.45f).dp)
         )
     }

@@ -4,26 +4,37 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
-private val BrightCinemaColorScheme = lightColorScheme(
+private val LiuguangColorScheme = darkColorScheme(
     primary = AppColors.Primary,
     onPrimary = AppColors.OnPrimary,
+    primaryContainer = AppColors.PrimaryLight,
+    onPrimaryContainer = AppColors.Primary,
     secondary = AppColors.Accent,
-    onSecondary = AppColors.OnPrimary,
+    onSecondary = AppColors.Background,
+    secondaryContainer = AppColors.AccentSoft,
+    onSecondaryContainer = AppColors.Accent,
     background = AppColors.Background,
     surface = AppColors.Surface,
     surfaceVariant = AppColors.SurfaceAlt,
+    surfaceContainer = AppColors.Surface,
+    surfaceContainerHigh = AppColors.SurfaceRaised,
+    surfaceContainerHighest = AppColors.SurfaceAlt,
     onSurface = AppColors.TextPrimary,
     onBackground = AppColors.TextPrimary,
     onSurfaceVariant = AppColors.TextSecondary,
     outline = AppColors.Divider,
+    outlineVariant = AppColors.DividerStrong,
     error = AppColors.Error,
-    onError = AppColors.OnPrimary
+    onError = AppColors.OnPrimary,
+    inverseSurface = AppColors.TextPrimary,
+    inverseOnSurface = AppColors.Background,
+    inversePrimary = AppColors.SurfaceAlt
 )
 
 private val StableCinemaShapes = Shapes(
@@ -63,7 +74,7 @@ fun LiuguangTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = BrightCinemaColorScheme,
+        colorScheme = LiuguangColorScheme,
         shapes = StableCinemaShapes,
         typography = StableCinemaTypography,
         content = content

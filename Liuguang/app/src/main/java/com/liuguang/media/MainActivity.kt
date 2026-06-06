@@ -9,11 +9,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.liuguang.media.ui.navigation.AppNavGraph
+import com.liuguang.media.ui.theme.AppColors
 import com.liuguang.media.ui.theme.LiuguangTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -32,11 +32,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             LiuguangTheme {
                 SideEffect {
-                    window.statusBarColor = Color.Transparent.toArgb()
-                    window.navigationBarColor = Color.Transparent.toArgb()
+                    window.statusBarColor = AppColors.Transparent.toArgb()
+                    window.navigationBarColor = AppColors.Transparent.toArgb()
                     WindowCompat.getInsetsController(window, window.decorView).apply {
-                        isAppearanceLightStatusBars = true
-                        isAppearanceLightNavigationBars = true
+                        isAppearanceLightStatusBars = false
+                        isAppearanceLightNavigationBars = false
                     }
                 }
                 AppNavGraph()

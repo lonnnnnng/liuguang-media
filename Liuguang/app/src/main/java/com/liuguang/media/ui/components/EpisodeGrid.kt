@@ -13,11 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.liuguang.media.domain.model.EpisodeItem
+import com.liuguang.media.ui.theme.AppColors
 import com.liuguang.media.ui.theme.Dimens
 
 @Composable
@@ -50,7 +50,7 @@ fun EpisodeGrid(
                 Text(
                     text = episode.label,
                     fontSize = 12.sp,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isSelected) AppColors.OnPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )

@@ -8,8 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.liuguang.media.ui.theme.AppColors
 import com.liuguang.media.ui.theme.Dimens
 
 @Composable
@@ -26,9 +26,9 @@ fun ShimmerEffect(modifier: Modifier = Modifier) {
     )
 
     val shimmerColors = listOf(
-        Color.LightGray.copy(alpha = 0.3f),
-        Color.LightGray.copy(alpha = 0.5f),
-        Color.LightGray.copy(alpha = 0.3f)
+        AppColors.SurfaceAlt.copy(alpha = 0.54f),
+        AppColors.SurfaceRaised.copy(alpha = 0.86f),
+        AppColors.SurfaceAlt.copy(alpha = 0.54f)
     )
 
     val brush = Brush.linearGradient(

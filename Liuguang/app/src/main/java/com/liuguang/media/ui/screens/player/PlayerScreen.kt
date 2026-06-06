@@ -81,7 +81,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -1277,7 +1276,7 @@ private fun RadioHeroPanel(
                     Icon(
                         imageVector = Icons.Default.Radio,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = AppColors.OnMedia,
                         modifier = Modifier.size(42.dp)
                     )
                 }
@@ -1399,12 +1398,12 @@ private fun FullscreenPlayerBackButton(
     Surface(
         onClick = onClick,
         modifier = modifier.size(44.dp),
-        color = Color.Black.copy(alpha = 0.46f),
-        contentColor = Color.White,
+        color = AppColors.MediaScrimSoft,
+        contentColor = AppColors.OnMedia,
         shape = RectangleShape,
         border = BorderStroke(
             width = 1.dp,
-            color = Color.White.copy(alpha = 0.24f)
+            color = AppColors.OnMedia.copy(alpha = 0.24f)
         ),
         shadowElevation = 0.dp
     ) {
@@ -1596,7 +1595,7 @@ private fun PlayerSurface(
                         .border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
-            .background(Color.Black)
+            .background(AppColors.Background)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { onToggleControlsState.value() },
@@ -1744,7 +1743,7 @@ private fun PlayerSurface(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.38f))
+                    .background(AppColors.MediaScrim.copy(alpha = 0.38f))
             ) {
                 if (isFullscreen) {
                     FullscreenPlayerBackButton(
@@ -1760,10 +1759,10 @@ private fun PlayerSurface(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(74.dp),
-                    color = Color.Black.copy(alpha = 0.54f),
-                    contentColor = Color.White,
+                    color = AppColors.MediaScrimSoft,
+                    contentColor = AppColors.OnMedia,
                     shape = RectangleShape,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.28f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -1778,7 +1777,7 @@ private fun PlayerSurface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.52f))
+                        .background(AppColors.MediaScrimSoft)
                         .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
                     Row(
@@ -1789,7 +1788,7 @@ private fun PlayerSurface(
                         val duration = durationState.value
                         Text(
                             text = formatTime(currentPosition),
-                            color = Color.White,
+                            color = AppColors.OnMedia,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1800,12 +1799,12 @@ private fun PlayerSurface(
                             colors = SliderDefaults.colors(
                                 thumbColor = AppColors.Primary,
                                 activeTrackColor = AppColors.Primary,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.18f)
+                                inactiveTrackColor = AppColors.OnMedia.copy(alpha = 0.18f)
                             )
                         )
                         Text(
                             text = formatTime(duration),
-                            color = Color.White,
+                            color = AppColors.OnMedia,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1814,7 +1813,7 @@ private fun PlayerSurface(
                                 Icon(
                                     imageVector = Icons.Default.Fullscreen,
                                     contentDescription = "全屏",
-                                    tint = Color.White
+                                    tint = AppColors.OnMedia
                                 )
                             }
                         }
@@ -1896,10 +1895,10 @@ private fun PlayerSurface(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(84.dp),
-                color = Color.Black.copy(alpha = 0.52f),
-                contentColor = Color.White,
+                color = AppColors.MediaScrimSoft,
+                contentColor = AppColors.OnMedia,
                 shape = RectangleShape,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.22f))
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -1938,12 +1937,12 @@ private fun androidx.compose.foundation.layout.BoxScope.PlaybackStatusOverlay(
         modifier = Modifier
             .align(Alignment.Center)
             .padding(horizontal = 24.dp),
-        color = Color.Black.copy(alpha = 0.70f),
-        contentColor = Color.White,
+        color = AppColors.MediaScrim,
+        contentColor = AppColors.OnMedia,
         shape = RectangleShape,
         border = BorderStroke(
             1.dp,
-            if (state.isFailed) AppColors.Error.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.20f)
+            if (state.isFailed) AppColors.Error.copy(alpha = 0.72f) else AppColors.OnMedia.copy(alpha = 0.20f)
         )
     ) {
         Column(
@@ -1959,7 +1958,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlaybackStatusOverlay(
             )
             Text(
                 text = state.message,
-                color = Color.White.copy(alpha = 0.84f),
+                color = AppColors.OnMedia.copy(alpha = 0.84f),
                 fontSize = 12.sp,
                 lineHeight = 18.sp
             )
@@ -2263,10 +2262,10 @@ private fun PlayerFullscreenActionButton(
     Surface(
         onClick = onClick,
         modifier = modifier,
-        color = Color.Black.copy(alpha = 0.46f),
-        contentColor = Color.White,
+        color = AppColors.MediaScrimSoft,
+        contentColor = AppColors.OnMedia,
         shape = RectangleShape,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+        border = BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.18f))
     ) {
         Row(
             modifier = Modifier
@@ -2278,13 +2277,13 @@ private fun PlayerFullscreenActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color.White,
+                tint = AppColors.OnMedia,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = label,
-                color = Color.White,
+                color = AppColors.OnMedia,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -2308,8 +2307,8 @@ private fun GestureOverlay(
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
-            color = Color.Black.copy(alpha = 0.72f),
-            contentColor = Color.White,
+            color = AppColors.MediaScrim,
+            contentColor = AppColors.OnMedia,
             shape = RectangleShape
         ) {
             Column(

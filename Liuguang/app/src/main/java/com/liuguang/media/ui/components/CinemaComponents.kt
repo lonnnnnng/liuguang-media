@@ -48,7 +48,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -594,10 +593,10 @@ fun CinemaLoading(
                     drawArc(
                         brush = Brush.sweepGradient(
                             colors = listOf(
-                                Color.Transparent,
+                                AppColors.Transparent,
                                 AppColors.Primary,
                                 AppColors.Primary,
-                                Color.Transparent
+                                AppColors.Transparent
                             )
                         ),
                         startAngle = -90f,
@@ -617,7 +616,7 @@ fun CinemaLoading(
                                 colors = listOf(
                                     AppColors.Primary.copy(alpha = 0.30f),
                                     AppColors.Primary.copy(alpha = 0.06f),
-                                    Color.Transparent
+                                    AppColors.Transparent
                                 )
                             )
                         )

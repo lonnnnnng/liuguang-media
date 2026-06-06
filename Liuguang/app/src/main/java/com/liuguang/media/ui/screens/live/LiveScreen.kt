@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -173,12 +172,12 @@ private fun ChannelRow(
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            Color(0xFF1E293B),
-                            Color(0xFF334155)
+                            AppColors.SurfaceAlt,
+                            AppColors.SurfaceRaised
                         )
                     )
                 )
-                .border(1.dp, Color.White.copy(alpha = 0.16f), RectangleShape),
+                .border(1.dp, AppColors.OnMedia.copy(alpha = 0.16f), RectangleShape),
             contentAlignment = Alignment.Center
         ) {
             if (channel.logo.isNotBlank()) {
@@ -193,7 +192,7 @@ private fun ChannelRow(
             } else {
                 Text(
                     text = channel.name.filter { it.isDigit() }.take(2).ifBlank { channel.name.take(1) },
-                    color = Color.White,
+                    color = AppColors.OnMedia,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Black
                 )

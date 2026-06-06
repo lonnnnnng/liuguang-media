@@ -345,7 +345,7 @@ private fun SiteItem(
                         contentDescription = if (site.isDefault) "默认源" else "设为默认源",
                         enabled = actionsEnabled && !site.isDefault,
                         active = site.isDefault,
-                        activeTint = Color(0xFFFACC15),
+                        activeTint = AppColors.Warning,
                         onClick = onSetDefault
                     )
                     SourcePrimaryActionButton(

@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -272,7 +271,7 @@ private fun RadioStationRow(
                         )
                     )
                 )
-                .border(1.dp, Color.White.copy(alpha = 0.20f), RectangleShape),
+                .border(1.dp, AppColors.OnMedia.copy(alpha = 0.20f), RectangleShape),
             contentAlignment = Alignment.Center
         ) {
             if (station.logo.isNotBlank()) {
@@ -287,7 +286,7 @@ private fun RadioStationRow(
             } else {
                 Text(
                     text = station.name.take(1).ifBlank { "R" },
-                    color = Color.White,
+                    color = AppColors.OnMedia,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Black
                 )

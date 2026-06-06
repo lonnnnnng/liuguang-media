@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -491,7 +490,7 @@ private fun FloatingCinemaNavigationBar(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
-                        color = if (selected) AppColors.PrimaryLight else Color.Transparent,
+                        color = if (selected) AppColors.PrimaryLight else AppColors.Transparent,
                         contentColor = if (selected) AppColors.Primary else AppColors.TextTertiary,
                         shape = RectangleShape
                     ) {

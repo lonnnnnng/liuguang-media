@@ -28,7 +28,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -172,7 +171,7 @@ private fun AudioTabButton(
     Row(
         modifier = modifier
             .clip(RectangleShape)
-            .background(if (selected) AppColors.Primary else Color.Transparent)
+            .background(if (selected) AppColors.Primary else AppColors.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 9.dp),
         horizontalArrangement = Arrangement.Center,

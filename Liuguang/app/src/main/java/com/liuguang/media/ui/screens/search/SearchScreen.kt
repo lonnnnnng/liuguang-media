@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -158,7 +157,7 @@ private fun SearchPrimaryButton(
         color = if (enabled) AppColors.Primary else AppColors.SurfaceRaised,
         contentColor = if (enabled) AppColors.OnPrimary else AppColors.TextTertiary,
         shape = RectangleShape,
-        border = BorderStroke(1.dp, if (enabled) Color.Transparent else AppColors.Divider)
+        border = BorderStroke(1.dp, if (enabled) AppColors.Transparent else AppColors.Divider)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
