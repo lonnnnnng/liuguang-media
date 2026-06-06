@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,9 @@ import com.liuguang.media.ui.screens.searchresult.SearchResultScreen
 import com.liuguang.media.ui.screens.settings.SettingsScreen
 import com.liuguang.media.ui.screens.sitemanagement.SiteManagementScreen
 import com.liuguang.media.ui.theme.AppColors
+import kotlinx.coroutines.delay
+
+private const val BOTTOM_BAR_REVEAL_DELAY_MS = 360L
 
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : BottomNavItem(Destinations.HOME, Icons.Default.VideoLibrary, "片库")
@@ -77,16 +81,23 @@ fun AppNavGraph(
     val context = LocalContext.current
     val activity = context as? Activity
     var showExitDialog by remember { mutableStateOf(false) }
+    var audioSecondaryPageVisible by remember { mutableStateOf(false) }
 
-    val prototypeRoutes = bottomNavItems.map { it.route } + listOf(
-        Destinations.DETAIL
-    )
-    val showBottomBar = currentRoute in prototypeRoutes
+    val showBottomBar = currentRoute in topLevelRoutes &&
+        !(currentRoute == Destinations.AUDIO && audioSecondaryPageVisible)
+    var bottomBarVisible by remember { mutableStateOf(showBottomBar) }
+
+    LaunchedEffect(showBottomBar) {
+        if (showBottomBar) {
+            delay(BOTTOM_BAR_REVEAL_DELAY_MS)
+        }
+        bottomBarVisible = showBottomBar
+    }
 
     Scaffold(
         containerColor = AppColors.Background,
         bottomBar = {
-            if (showBottomBar) {
+            if (bottomBarVisible) {
                 FloatingCinemaNavigationBar(
                     items = bottomNavItems,
                     currentRoute = currentDestination?.route,
@@ -137,6 +148,9 @@ fun AppNavGraph(
 
             composable(Destinations.AUDIO) {
                 AudioScreen(
+                    onSecondaryPageVisibilityChange = { isVisible ->
+                        audioSecondaryPageVisible = isVisible
+                    },
                     onNavigateToRadioPlayer = { station, sourceId ->
                         navController.navigate(
                             Destinations.radioPlayer(

@@ -18,19 +18,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,14 +54,10 @@ fun RadioScreen(
     viewModel: RadioViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val sources by viewModel.sources.collectAsState()
     val currentSourceId by viewModel.currentSourceId.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedGroup by viewModel.selectedGroup.collectAsState()
     val groups by viewModel.groups.collectAsState()
-
-    var showSourceSelector by remember { mutableStateOf(false) }
-    val currentSourceName = sources.firstOrNull { it.id == currentSourceId }?.name ?: "选择电台源"
 
     if (useOuterBackground) {
         CinemaBackground(modifier = Modifier.fillMaxSize()) {
@@ -76,11 +66,9 @@ fun RadioScreen(
                 groups = groups,
                 selectedGroup = selectedGroup,
                 searchQuery = searchQuery,
-                currentSourceName = currentSourceName,
                 currentSourceId = currentSourceId,
                 onSearchChange = viewModel::setSearchQuery,
                 onRefreshClick = viewModel::refreshCurrentSource,
-                onSourceClick = { showSourceSelector = true },
                 onAllClick = viewModel::showAllStations,
                 onGroupClick = viewModel::selectGroup,
                 onRetryClick = viewModel::refreshCurrentSource,
@@ -93,48 +81,13 @@ fun RadioScreen(
             groups = groups,
             selectedGroup = selectedGroup,
             searchQuery = searchQuery,
-            currentSourceName = currentSourceName,
             currentSourceId = currentSourceId,
             onSearchChange = viewModel::setSearchQuery,
             onRefreshClick = viewModel::refreshCurrentSource,
-            onSourceClick = { showSourceSelector = true },
             onAllClick = viewModel::showAllStations,
             onGroupClick = viewModel::selectGroup,
             onRetryClick = viewModel::refreshCurrentSource,
             onNavigateToPlayer = onNavigateToPlayer
-        )
-    }
-
-    if (showSourceSelector) {
-        AlertDialog(
-            onDismissRequest = { showSourceSelector = false },
-            containerColor = AppColors.Surface,
-            titleContentColor = AppColors.TextPrimary,
-            textContentColor = AppColors.TextSecondary,
-            title = { Text("选择电台源") },
-            text = {
-                Column {
-                    sources.filter { it.enabled }.forEach { source ->
-                        TextButton(
-                            onClick = {
-                                viewModel.selectSource(source.id)
-                                showSourceSelector = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = source.name,
-                                color = if (source.id == currentSourceId) AppColors.Primary else AppColors.TextPrimary
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSourceSelector = false }) {
-                    Text("取消")
-                }
-            }
         )
     }
 }
@@ -145,11 +98,9 @@ private fun RadioScreenContent(
     groups: List<String>,
     selectedGroup: String?,
     searchQuery: String,
-    currentSourceName: String,
     currentSourceId: Long?,
     onSearchChange: (String) -> Unit,
     onRefreshClick: () -> Unit,
-    onSourceClick: () -> Unit,
     onAllClick: () -> Unit,
     onGroupClick: (String) -> Unit,
     onRetryClick: () -> Unit,
@@ -175,12 +126,6 @@ private fun RadioScreenContent(
                             onGroupClick(key)
                         }
                     },
-                    leadingAction = MediaFilterAction(
-                        label = "换源",
-                        icon = Icons.Default.MoreVert,
-                        contentDescription = "切换电台源：$currentSourceName",
-                        onClick = onSourceClick
-                    ),
                     trailingAction = MediaFilterAction(
                         label = "刷新",
                         icon = Icons.Default.Refresh,
@@ -206,7 +151,7 @@ private fun RadioScreenContent(
                         is RadioUiState.Empty -> item {
                             CinemaMessage(
                                 title = "暂无电台",
-                                message = "当前筛选没有电台，清除搜索或切换电台源再试。"
+                                message = "当前筛选没有电台，清除搜索或检查电台源配置。"
                             )
                         }
                         is RadioUiState.Success -> {

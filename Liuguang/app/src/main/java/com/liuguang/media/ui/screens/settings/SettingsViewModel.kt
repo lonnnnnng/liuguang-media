@@ -13,6 +13,9 @@ import com.liuguang.media.data.repository.NetworkSettingsRepository
 import com.liuguang.media.data.repository.PodcastRepository
 import com.liuguang.media.data.repository.RadioRepository
 import com.liuguang.media.data.repository.SiteRepository
+import com.liuguang.media.data.repository.ThemeMode
+import com.liuguang.media.data.repository.ThemeSettings
+import com.liuguang.media.data.repository.ThemeSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +42,8 @@ class SettingsViewModel @Inject constructor(
     private val radioRepository: RadioRepository,
     private val podcastRepository: PodcastRepository,
     private val appUpdateRepository: AppUpdateRepository,
-    private val networkSettingsRepository: NetworkSettingsRepository
+    private val networkSettingsRepository: NetworkSettingsRepository,
+    private val themeSettingsRepository: ThemeSettingsRepository
 ) : ViewModel() {
     private val _maintenanceMessage = MutableStateFlow<String?>(null)
     val maintenanceMessage: StateFlow<String?> = _maintenanceMessage.asStateFlow()
@@ -51,6 +55,12 @@ class SettingsViewModel @Inject constructor(
     val updateUiState: StateFlow<SettingsUpdateUiState> = _updateUiState.asStateFlow()
 
     val networkSettings: StateFlow<NetworkSettings> = networkSettingsRepository.settings
+    val themeSettings: StateFlow<ThemeSettings> = themeSettingsRepository.settings
+
+    fun saveThemeMode(mode: ThemeMode) {
+        themeSettingsRepository.updateThemeMode(mode)
+        _toastMessage.value = "主题已切换为：${mode.displayName}"
+    }
 
     fun saveNetworkSettings(
         videoTimeoutSeconds: String,

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.NetworkCheck
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.RestartAlt
@@ -36,6 +37,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.liuguang.media.data.repository.ThemeMode
 import com.liuguang.media.ui.components.CinemaBackground
 import com.liuguang.media.ui.theme.AppColors
 import java.io.File
@@ -75,10 +79,12 @@ fun SettingsScreen(
     var showResetDialog by remember { mutableStateOf(false) }
     var showDisclaimerDialog by remember { mutableStateOf(false) }
     var showNetworkSettingsDialog by remember { mutableStateOf(false) }
+    var showThemeSettingsDialog by remember { mutableStateOf(false) }
     val maintenanceMessage by viewModel.maintenanceMessage.collectAsState()
     val toastMessage by viewModel.toastMessage.collectAsState()
     val updateUiState by viewModel.updateUiState.collectAsState()
     val networkSettings by viewModel.networkSettings.collectAsState()
+    val themeSettings by viewModel.themeSettings.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(toastMessage) {
@@ -128,6 +134,12 @@ fun SettingsScreen(
                         title = "网络设置",
                         subtitle = "检测超时、播放切线、自动检测",
                         onClick = { showNetworkSettingsDialog = true }
+                    )
+                    SettingsItem(
+                        icon = Icons.Default.Palette,
+                        title = "系统主题",
+                        subtitle = "当前：${themeSettings.mode.displayName}",
+                        onClick = { showThemeSettingsDialog = true }
                     )
                     SettingsItem(
                         icon = Icons.Default.Link,
@@ -243,6 +255,35 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showNetworkSettingsDialog = false }) {
                     Text("取消")
+                }
+            }
+        )
+    }
+
+    if (showThemeSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showThemeSettingsDialog = false },
+            containerColor = AppColors.Surface,
+            titleContentColor = AppColors.TextPrimary,
+            textContentColor = AppColors.TextSecondary,
+            title = { Text("系统主题") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    ThemeMode.values().forEach { mode ->
+                        ThemeModeRow(
+                            mode = mode,
+                            selected = themeSettings.mode == mode,
+                            onClick = {
+                                viewModel.saveThemeMode(mode)
+                                showThemeSettingsDialog = false
+                            }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showThemeSettingsDialog = false }) {
+                    Text("关闭")
                 }
             }
         )
@@ -379,6 +420,59 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ThemeModeRow(
+    mode: ThemeMode,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = if (selected) AppColors.PrimaryLight else AppColors.Transparent,
+        contentColor = AppColors.TextPrimary,
+        shape = RectangleShape
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = selected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = AppColors.Primary,
+                    unselectedColor = AppColors.TextTertiary
+                )
+            )
+            Column(
+                modifier = Modifier.padding(start = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(
+                    text = mode.displayName,
+                    color = AppColors.TextPrimary,
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = when (mode) {
+                        ThemeMode.Light -> "始终使用亮色界面"
+                        ThemeMode.Dark -> "始终使用夜间深色界面"
+                        ThemeMode.System -> "跟随系统深浅色设置自动切换"
+                    },
+                    color = AppColors.TextTertiary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp
+                )
+            }
+        }
     }
 }
 

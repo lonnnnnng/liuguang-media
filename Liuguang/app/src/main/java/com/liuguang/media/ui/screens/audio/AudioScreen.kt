@@ -20,6 +20,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,21 +45,32 @@ import com.liuguang.media.ui.theme.AppColors
 
 private enum class AudioTab(
     val title: String,
-    val subtitle: String,
     val icon: ImageVector
 ) {
-    Radio("电台", "直播音频", Icons.Default.Radio),
-    Podcast("播客", "播客节目", Icons.Default.Podcasts)
+    Radio("电台", Icons.Default.Radio),
+    Podcast("播客", Icons.Default.Podcasts)
 }
 
 @Composable
 fun AudioScreen(
+    onSecondaryPageVisibilityChange: (Boolean) -> Unit = {},
     onNavigateToRadioPlayer: (RadioStation, Long?) -> Unit,
     onNavigateToPodcastPlayer: (PodcastEpisode, String, String) -> Unit,
     podcastViewModel: PodcastViewModel = hiltViewModel()
 ) {
     var selectedTabName by rememberSaveable { mutableStateOf(AudioTab.Radio.name) }
     val selectedTab = AudioTab.valueOf(selectedTabName)
+    val podcastUiState by podcastViewModel.uiState.collectAsState()
+    val secondaryPageVisible = selectedTab == AudioTab.Podcast &&
+        podcastUiState.selectedSubscriptionId != null
+
+    LaunchedEffect(secondaryPageVisible) {
+        onSecondaryPageVisibilityChange(secondaryPageVisible)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { onSecondaryPageVisibilityChange(false) }
+    }
 
     CinemaBackground(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -104,36 +118,6 @@ private fun AudioHeader(
             .padding(start = 14.dp, top = 6.dp, end = 14.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "音频",
-                    color = AppColors.TextPrimary,
-                    fontSize = 21.sp,
-                    lineHeight = 25.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = "电台和播客统一入口",
-                    color = AppColors.TextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Text(
-                text = selectedTab.subtitle,
-                color = AppColors.Primary,
-                fontSize = 12.sp,
-                lineHeight = 15.sp,
-                fontWeight = FontWeight.Black
-            )
-        }
-
         Surface(
             modifier = Modifier
                 .fillMaxWidth()

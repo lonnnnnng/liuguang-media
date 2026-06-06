@@ -4,38 +4,71 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
-private val LiuguangColorScheme = lightColorScheme(
-    primary = AppColors.Primary,
-    onPrimary = AppColors.OnPrimary,
-    primaryContainer = AppColors.PrimaryLight,
-    onPrimaryContainer = AppColors.TextPrimary,
-    secondary = AppColors.Accent,
-    onSecondary = AppColors.OnPrimary,
-    secondaryContainer = AppColors.AccentSoft,
-    onSecondaryContainer = AppColors.TextPrimary,
-    background = AppColors.Background,
-    surface = AppColors.Surface,
-    surfaceVariant = AppColors.SurfaceAlt,
-    surfaceContainer = AppColors.Surface,
-    surfaceContainerHigh = AppColors.SurfaceRaised,
-    surfaceContainerHighest = AppColors.SurfaceAlt,
-    onSurface = AppColors.TextPrimary,
-    onBackground = AppColors.TextPrimary,
-    onSurfaceVariant = AppColors.TextSecondary,
-    outline = AppColors.Divider,
-    outlineVariant = AppColors.DividerStrong,
-    error = AppColors.Error,
-    onError = AppColors.OnPrimary,
-    inverseSurface = AppColors.TextPrimary,
-    inverseOnSurface = AppColors.Surface,
-    inversePrimary = AppColors.Primary
-)
+private fun liuguangColorScheme(
+    palette: AppColorPalette,
+    darkTheme: Boolean
+) = if (darkTheme) {
+    darkColorScheme(
+        primary = palette.primary,
+        onPrimary = palette.onPrimary,
+        primaryContainer = palette.primaryLight,
+        onPrimaryContainer = palette.textPrimary,
+        secondary = palette.accent,
+        onSecondary = palette.onPrimary,
+        secondaryContainer = palette.accentSoft,
+        onSecondaryContainer = palette.textPrimary,
+        background = palette.background,
+        surface = palette.surface,
+        surfaceVariant = palette.surfaceAlt,
+        surfaceContainer = palette.surface,
+        surfaceContainerHigh = palette.surfaceRaised,
+        surfaceContainerHighest = palette.surfaceAlt,
+        onSurface = palette.textPrimary,
+        onBackground = palette.textPrimary,
+        onSurfaceVariant = palette.textSecondary,
+        outline = palette.divider,
+        outlineVariant = palette.dividerStrong,
+        error = palette.error,
+        onError = palette.onPrimary,
+        inverseSurface = palette.textPrimary,
+        inverseOnSurface = palette.surface,
+        inversePrimary = palette.primary
+    )
+} else {
+    lightColorScheme(
+        primary = palette.primary,
+        onPrimary = palette.onPrimary,
+        primaryContainer = palette.primaryLight,
+        onPrimaryContainer = palette.textPrimary,
+        secondary = palette.accent,
+        onSecondary = palette.onPrimary,
+        secondaryContainer = palette.accentSoft,
+        onSecondaryContainer = palette.textPrimary,
+        background = palette.background,
+        surface = palette.surface,
+        surfaceVariant = palette.surfaceAlt,
+        surfaceContainer = palette.surface,
+        surfaceContainerHigh = palette.surfaceRaised,
+        surfaceContainerHighest = palette.surfaceAlt,
+        onSurface = palette.textPrimary,
+        onBackground = palette.textPrimary,
+        onSurfaceVariant = palette.textSecondary,
+        outline = palette.divider,
+        outlineVariant = palette.dividerStrong,
+        error = palette.error,
+        onError = palette.onPrimary,
+        inverseSurface = palette.textPrimary,
+        inverseOnSurface = palette.surface,
+        inversePrimary = palette.primary
+    )
+}
 
 private val StableCinemaShapes = Shapes(
     extraSmall = CutCornerShape(0.dp),
@@ -71,10 +104,14 @@ private fun TextStyle.withHeiti(): TextStyle = copy(fontFamily = HeitiFontFamily
 
 @Composable
 fun LiuguangTheme(
+    darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
+    val palette = if (darkTheme) LiuguangDarkPalette else LiuguangLightPalette
+    AppColors.usePalette(palette)
+
     MaterialTheme(
-        colorScheme = LiuguangColorScheme,
+        colorScheme = liuguangColorScheme(palette, darkTheme),
         shapes = StableCinemaShapes,
         typography = StableCinemaTypography,
         content = content
