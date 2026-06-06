@@ -35,8 +35,8 @@ class MainActivity : ComponentActivity() {
                     window.statusBarColor = AppColors.Transparent.toArgb()
                     window.navigationBarColor = AppColors.Transparent.toArgb()
                     WindowCompat.getInsetsController(window, window.decorView).apply {
-                        isAppearanceLightStatusBars = false
-                        isAppearanceLightNavigationBars = false
+                        isAppearanceLightStatusBars = true
+                        isAppearanceLightNavigationBars = true
                     }
                 }
                 AppNavGraph()
