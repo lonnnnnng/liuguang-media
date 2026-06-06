@@ -158,8 +158,7 @@ private fun DetailOverviewCard(
 ) {
     var moreDialog by remember(source.key) { mutableStateOf<DetailMoreDialog?>(null) }
     val playableEpisodeCount = source.playableEpisodeCount(selectedGroup)
-    val totalEpisodeCount = source.vodDetail.vod_total?.takeIf { it > 0 }
-        ?: playableEpisodeCount
+    val currentEpisodeNumber = source.currentEpisodeNumber(selectedGroup) ?: playableEpisodeCount
     val typeName = source.vodDetail.type_name?.takeIf { it.isNotBlank() } ?: "未知"
     val releaseDate = source.vodDetail.vod_pubdate?.takeIf { it.isNotBlank() }
         ?: source.vodDetail.vod_year?.takeIf { it.isNotBlank() }
@@ -241,13 +240,14 @@ private fun DetailOverviewCard(
             DetailMetaLine(
                 items = listOf(
                     source.siteName,
-                    "共 ${totalEpisodeCount ?: 0} 集",
-                    typeName,
                     detailUpdateLabel(
                         remarks = source.vodDetail.vod_remarks,
                         serial = source.vodDetail.vod_serial,
-                        playableEpisodeCount = playableEpisodeCount
+                        vodIsEnd = source.vodDetail.vod_isend,
+                        isEnd = source.vodDetail.isend,
+                        currentEpisodeNumber = currentEpisodeNumber
                     ),
+                    typeName,
                     "上映日期 $releaseDate",
                     "更新时间 $updateTime"
                 )
@@ -286,17 +286,99 @@ private data class DetailMoreDialog(
 private fun detailUpdateLabel(
     remarks: String?,
     serial: String?,
-    playableEpisodeCount: Int?
+    vodIsEnd: String?,
+    isEnd: String?,
+    currentEpisodeNumber: Int?
 ): String {
-    val countFromRemarks = Regex("""\d+""").find(remarks?.trim().orEmpty())?.value
-    val countFromSerial = Regex("""\d+""").find(serial?.trim().orEmpty())?.value
-    val count = countFromRemarks ?: countFromSerial ?: playableEpisodeCount?.toString()
-    return if (count != null) "更新至 $count 集" else "更新至 未知"
+    val status = detailCompletionStatus(vodIsEnd, isEnd, remarks)
+    val count = currentEpisodeCountFromRemarks(remarks)
+        ?: currentEpisodeCountFromSerial(serial)
+        ?: currentEpisodeNumber?.takeIf { it > 0 }?.toString()
+
+    return when {
+        status == "已完结" && count != null -> "$status · 已更新 $count 集"
+        status != null && count != null -> "$status · 更新至 $count 集"
+        status != null -> status
+        count != null -> "更新至 $count 集"
+        else -> "更新状态未知"
+    }
 }
 
 private fun DetailSourceOption.playableEpisodeCount(selectedGroup: EpisodeGroup? = null): Int? {
     return selectedGroup?.episodes?.size?.takeIf { it > 0 }
         ?: episodeGroups.maxOfOrNull { it.episodes.size }?.takeIf { it > 0 }
+}
+
+private fun DetailSourceOption.currentEpisodeNumber(selectedGroup: EpisodeGroup? = null): Int? {
+    return selectedGroup?.episodes?.maxRegularEpisodeNumber()
+        ?: episodeGroups.mapNotNull { it.episodes.maxRegularEpisodeNumber() }.maxOrNull()
+}
+
+private fun List<EpisodeItem>.maxRegularEpisodeNumber(): Int? {
+    return mapNotNull { episode -> episode.label.regularEpisodeNumber() }.maxOrNull()
+}
+
+private fun String.regularEpisodeNumber(): Int? {
+    val text = trim()
+    if (text.isBlank()) return null
+    val patterns = listOf(
+        Regex("""第\s*(\d{1,5})\s*[集话期回]"""),
+        Regex("""(^|[^\d])(\d{1,5})\s*[集话期回]"""),
+        Regex("""^(\d{1,5})$""")
+    )
+    return patterns.firstNotNullOfOrNull { pattern ->
+        pattern.find(text)?.groupValues?.lastOrNull()?.toIntOrNull()
+    }
+}
+
+private fun detailCompletionStatus(vodIsEnd: String?, isEnd: String?, remarks: String?): String? {
+    return (vodIsEnd.toCompletionFlag() ?: isEnd.toCompletionFlag())?.let { flag ->
+        if (flag == 1) "已完结" else "连载中"
+    } ?: completionStatusFromRemarks(remarks)
+}
+
+private fun String?.toCompletionFlag(): Int? {
+    val value = this?.trim()?.lowercase() ?: return null
+    return when (value) {
+        "1", "true", "yes", "完结", "已完结" -> 1
+        "0", "false", "no", "连载", "连载中" -> 0
+        else -> value.toIntOrNull()?.takeIf { it == 0 || it == 1 }
+    }
+}
+
+private fun completionStatusFromRemarks(remarks: String?): String? {
+    val text = remarks?.trim().orEmpty()
+    return when {
+        text.isBlank() -> null
+        text.contains("完结") ||
+            Regex("""全\s*\d{1,5}\s*[集话期回]""").containsMatchIn(text) ||
+            Regex("""\d{1,5}\s*[集话期回]\s*全""").containsMatchIn(text) -> "已完结"
+        text.contains("连载") || text.contains("更新") -> "连载中"
+        else -> null
+    }
+}
+
+private fun currentEpisodeCountFromRemarks(remarks: String?): String? {
+    val text = remarks?.trim().orEmpty()
+    if (text.isBlank()) return null
+    val patterns = listOf(
+        Regex("""更新(?:至|到)?第?\s*(\d{1,5})\s*[集话期回]"""),
+        Regex("""(?:连载|更新)(?:至|到)?\s*(\d{1,5})\s*[集话期回]"""),
+        Regex("""第\s*(\d{1,5})\s*[集话期回]"""),
+        Regex("""全\s*(\d{1,5})\s*[集话期回]"""),
+        Regex("""(\d{1,5})\s*[集话期回](?:全|完结)""")
+    )
+    return patterns.firstNotNullOfOrNull { pattern ->
+        pattern.find(text)?.groupValues?.getOrNull(1)
+    }
+}
+
+private fun currentEpisodeCountFromSerial(serial: String?): String? {
+    return serial
+        ?.trim()
+        ?.toIntOrNull()
+        ?.takeIf { it > 0 }
+        ?.toString()
 }
 
 @Composable

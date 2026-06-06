@@ -113,13 +113,13 @@ fun SiteManagementScreen(
                 actions = {
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Add,
-                        contentDescription = "单个新增视频源",
+                        contentDescription = "新增视频源",
                         enabled = !isBusy,
                         onClick = { showAddDialog = true }
                     )
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Link,
-                        contentDescription = "批量导入视频源",
+                        contentDescription = "URL导入视频源",
                         enabled = !isBusy,
                         isLoading = importUiState.isImporting,
                         onClick = { showImportDialog = true }
@@ -165,11 +165,11 @@ fun SiteManagementScreen(
                 SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = if (isBusy) "正在处理视频源" else "暂无视频源",
-                    message = "添加资源站接口后，首页和搜索会自动使用启用的源。",
+                    message = "新增资源站接口后，首页和搜索会自动使用启用的源。",
                     icon = Icons.Default.VideoLibrary,
-                    primaryActionText = "单个新增",
+                    primaryActionText = "新增",
                     onPrimaryAction = { showAddDialog = true },
-                    secondaryActionText = "批量导入",
+                    secondaryActionText = "URL导入",
                     onSecondaryAction = { showImportDialog = true },
                     actionsEnabled = !isBusy
                 )
@@ -219,7 +219,7 @@ fun SiteManagementScreen(
 
     if (showAddDialog) {
         SourceEditorDialog(
-            title = "添加视频源",
+            title = "新增视频源",
             description = "配置 MacCMS 视频接口，保存后会用于片库、搜索和详情解析。",
             nameLabel = "视频源名称",
             urlLabel = "接口地址",
@@ -266,7 +266,7 @@ fun SiteManagementScreen(
     if (showClearDialog) {
         ConfirmDialog(
             title = "清空视频源",
-            message = "确定要清空所有视频源吗？删除后可通过批量导入重新添加。",
+            message = "确定要清空所有视频源吗？删除后可通过 URL导入重新新增。",
             onDismiss = { showClearDialog = false },
             onConfirm = {
                 viewModel.clearAllSites()
@@ -504,14 +504,14 @@ private fun VideoSiteImportDialog(
     var url by remember { mutableStateOf(DefaultSources.DEFAULT_VIDEO_IMPORT_URL) }
 
     SourceUrlEditorDialog(
-        title = "导入视频源",
+        title = "URL导入视频源",
         initialUrl = url,
         description = "读取 lite.json 配置中的 name 和 api 字段，并自动跳过已存在地址。",
         urlLabel = "配置地址",
         urlPlaceholder = DefaultSources.DEFAULT_VIDEO_IMPORT_URL,
         helperText = "支持从远程 URL 导入视频源配置，长链接可直接粘贴。",
         icon = Icons.Default.Link,
-        confirmText = "导入",
+        confirmText = "URL导入",
         isConfirming = isImporting,
         dismissEnabled = !isImporting,
         bottomContent = {

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -300,6 +301,7 @@ private fun CinemaVodPoster(
     modifier: Modifier = Modifier
 ) {
     val vod = item.vod
+    val typeName = vod.type_name?.takeIf { it.isNotBlank() } ?: "影视"
     Surface(
         modifier = modifier.fillMaxWidth(),
         onClick = onClick,
@@ -328,23 +330,19 @@ private fun CinemaVodPoster(
                     modifier = Modifier.fillMaxSize()
                 )
                 if (!vod.vod_remarks.isNullOrBlank()) {
-                    Surface(
+                    PosterBadge(
+                        text = vod.vod_remarks,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(6.dp),
-                        color = AppColors.Primary,
-                        contentColor = AppColors.OnPrimary,
-                        shape = RectangleShape
-                    ) {
-                        Text(
-                            text = vod.vod_remarks,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            maxLines = 1
-                        )
-                    }
+                            .padding(6.dp)
+                    )
                 }
+                PosterBadge(
+                    text = typeName,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                )
             }
             Text(
                 text = vod.vod_name,
@@ -362,8 +360,29 @@ private fun CinemaVodPoster(
 }
 
 @Composable
+private fun PosterBadge(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.widthIn(max = 86.dp),
+        color = AppColors.Primary,
+        contentColor = AppColors.OnPrimary,
+        shape = RectangleShape
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
 private fun HomeVodMetaRow(item: HomeVodItem) {
-    val typeName = item.vod.type_name?.takeIf { it.isNotBlank() } ?: "影视"
     val area = item.vod.vod_area?.takeIf { it.isNotBlank() } ?: "未知"
     val year = item.vod.vod_year?.takeIf { it.isNotBlank() } ?: "在线"
 
@@ -374,15 +393,6 @@ private fun HomeVodMetaRow(item: HomeVodItem) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = typeName,
-            modifier = Modifier.weight(1f),
-            color = AppColors.TextTertiary,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
         Text(
             text = area,
             modifier = Modifier.weight(1f),

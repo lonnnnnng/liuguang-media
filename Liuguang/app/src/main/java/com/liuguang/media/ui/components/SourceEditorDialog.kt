@@ -169,7 +169,7 @@ fun SourceBulkImportDialog(
         urlPlaceholder = placeholder,
         helperText = helperText,
         icon = icon,
-        confirmText = "导入",
+        confirmText = "URL导入",
         isConfirming = isImporting,
         dismissEnabled = !isImporting,
         bottomContent = bottomContent,

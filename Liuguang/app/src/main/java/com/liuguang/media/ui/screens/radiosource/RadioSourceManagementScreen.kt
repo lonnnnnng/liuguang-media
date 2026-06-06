@@ -104,13 +104,13 @@ fun RadioSourceManagementScreen(
                 actions = {
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Add,
-                        contentDescription = "单个新增电台源",
+                        contentDescription = "新增电台源",
                         enabled = !isBusy,
                         onClick = { showAddDialog = true }
                     )
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Link,
-                        contentDescription = "批量导入电台源",
+                        contentDescription = "URL导入电台源",
                         enabled = !isBusy,
                         isLoading = importUiState.isImporting,
                         onClick = { showImportDialog = true }
@@ -156,11 +156,11 @@ fun RadioSourceManagementScreen(
                 SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = "暂无电台源",
-                    message = "添加 M3U、PLS、JSON 或 Radio Browser 地址后，电台页会解析列表。",
+                    message = "新增 M3U、PLS、JSON 或 Radio Browser 地址后，电台页会解析列表。",
                     icon = Icons.Default.Radio,
-                    primaryActionText = "单个新增",
+                    primaryActionText = "新增",
                     onPrimaryAction = { showAddDialog = true },
-                    secondaryActionText = "批量导入",
+                    secondaryActionText = "URL导入",
                     onSecondaryAction = { showImportDialog = true },
                     actionsEnabled = !isBusy
                 )
@@ -196,7 +196,7 @@ fun RadioSourceManagementScreen(
 
     if (showAddDialog) {
         SourceEditorDialog(
-            title = "添加电台源",
+            title = "新增电台源",
             description = "配置网络电台源地址，保存后会用于电台列表聚合与播放。",
             nameLabel = "电台源名称",
             urlLabel = "源地址",
@@ -212,7 +212,7 @@ fun RadioSourceManagementScreen(
 
     if (showImportDialog) {
         SourceBulkImportDialog(
-            title = "批量导入电台源",
+            title = "URL导入电台源",
             description = "每行一个电台源，支持“名称,URL”；只有 URL 时会自动命名。",
             initialValue = DefaultSources.DEFAULT_RADIO_IMPORT_URL,
             placeholder = DefaultSources.DEFAULT_RADIO_IMPORT_URL,

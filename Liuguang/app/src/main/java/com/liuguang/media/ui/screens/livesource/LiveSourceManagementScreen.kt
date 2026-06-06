@@ -104,13 +104,13 @@ fun LiveSourceManagementScreen(
                 actions = {
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Add,
-                        contentDescription = "单个新增直播源",
+                        contentDescription = "新增直播源",
                         enabled = !isBusy,
                         onClick = { showAddDialog = true }
                     )
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Link,
-                        contentDescription = "批量导入直播源",
+                        contentDescription = "URL导入直播源",
                         enabled = !isBusy,
                         isLoading = importUiState.isImporting,
                         onClick = { showImportDialog = true }
@@ -156,11 +156,11 @@ fun LiveSourceManagementScreen(
                 SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = "暂无直播源",
-                    message = "添加 M3U 地址后，直播页会解析频道列表。",
+                    message = "新增 M3U 地址后，直播页会解析频道列表。",
                     icon = Icons.Default.LiveTv,
-                    primaryActionText = "单个新增",
+                    primaryActionText = "新增",
                     onPrimaryAction = { showAddDialog = true },
-                    secondaryActionText = "批量导入",
+                    secondaryActionText = "URL导入",
                     onSecondaryAction = { showImportDialog = true },
                     actionsEnabled = !isBusy
                 )
@@ -196,7 +196,7 @@ fun LiveSourceManagementScreen(
 
     if (showAddDialog) {
         SourceEditorDialog(
-            title = "添加直播源",
+            title = "新增直播源",
             description = "配置电视直播源地址，保存后会用于直播频道解析与播放。",
             nameLabel = "直播源名称",
             urlLabel = "播放列表地址",
@@ -212,7 +212,7 @@ fun LiveSourceManagementScreen(
 
     if (showImportDialog) {
         SourceBulkImportDialog(
-            title = "批量导入直播源",
+            title = "URL导入直播源",
             description = "每行一个直播源，支持“名称,URL”；只有 URL 时会自动命名。",
             initialValue = DefaultSources.DEFAULT_LIVE_IMPORT_URL,
             placeholder = DefaultSources.DEFAULT_LIVE_IMPORT_URL,

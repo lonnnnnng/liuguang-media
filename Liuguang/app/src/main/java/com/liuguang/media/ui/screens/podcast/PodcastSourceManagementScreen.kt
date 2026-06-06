@@ -145,7 +145,7 @@ fun PodcastSourceManagementScreen(
                 actions = {
                     SourceManagementTopActionButton(
                         icon = Icons.Default.Add,
-                        contentDescription = "单个新增播客源",
+                        contentDescription = "新增播客源",
                         enabled = !isBusy,
                         onClick = { showAddDialog = true }
                     )
@@ -197,9 +197,9 @@ fun PodcastSourceManagementScreen(
                 SourceManagementEmptyState(
                     modifier = Modifier.fillMaxSize(),
                     title = "暂无播客源",
-                    message = "单个新增栏目地址，或通过清单 URL 导入多个播客栏目。",
+                    message = "新增栏目地址，或通过清单 URL 导入多个播客栏目。",
                     icon = Icons.Default.RssFeed,
-                    primaryActionText = "单个新增",
+                    primaryActionText = "新增",
                     onPrimaryAction = { showAddDialog = true },
                     secondaryActionText = "URL导入",
                     onSecondaryAction = { showImportDialog = true },
@@ -237,7 +237,7 @@ fun PodcastSourceManagementScreen(
 
     if (showAddDialog) {
         PodcastSourceEditorDialog(
-            title = "单个新增播客源",
+            title = "新增播客源",
             initialUrl = "",
             source = null,
             isConfirming = uiState.isAdding,
@@ -255,7 +255,7 @@ fun PodcastSourceManagementScreen(
             urlPlaceholder = DefaultSources.DEFAULT_PODCAST_IMPORT_URL,
             helperText = "清单支持每行一个 RSS / Atom 地址，也支持“名称,地址”。导入时会自动解析栏目标题、封面和节目数量。",
             icon = Icons.Default.Link,
-            confirmText = "获取并导入",
+            confirmText = "URL导入",
             isConfirming = importUiState.isImporting,
             dismissEnabled = !importUiState.isImporting,
             bottomContent = {
@@ -362,7 +362,7 @@ private fun PodcastSourceEditorDialog(
         },
         urlLabel = "栏目地址",
         urlPlaceholder = "https://example.com/podcast/feed.xml",
-        helperText = "单个新增只填写一个播客栏目地址。多个栏目请使用 URL导入。",
+        helperText = "新增只填写一个播客栏目地址。多个栏目请使用 URL导入。",
         icon = Icons.Default.RssFeed,
         confirmText = if (source == null) "添加并同步" else "保存并刷新",
         isConfirming = isConfirming,
