@@ -334,14 +334,14 @@ private fun CinemaVodPoster(
                         text = vod.vod_remarks,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(6.dp)
+                            .padding(4.dp)
                     )
                 }
                 PosterBadge(
                     text = typeName,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(6.dp)
+                        .padding(4.dp)
                 )
             }
             Text(
@@ -365,15 +365,16 @@ private fun PosterBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.widthIn(max = 86.dp),
+        modifier = modifier.widthIn(max = 78.dp),
         color = AppColors.Primary,
         contentColor = AppColors.OnPrimary,
         shape = RectangleShape
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-            fontSize = 10.sp,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            fontSize = 9.5.sp,
+            lineHeight = 11.sp,
             fontWeight = FontWeight.Black,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

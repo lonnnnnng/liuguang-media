@@ -52,6 +52,7 @@ import com.liuguang.media.domain.model.PodcastLibraryEpisode
 import com.liuguang.media.player.AudioPlaybackQueueStore
 import com.liuguang.media.player.AudioQueueItem
 import com.liuguang.media.ui.components.CinemaBackground
+import com.liuguang.media.ui.components.CinemaLoading
 import com.liuguang.media.ui.components.CinemaMessage
 import com.liuguang.media.ui.components.CinemaSearchInput
 import com.liuguang.media.ui.components.NetworkImage
@@ -153,6 +154,7 @@ private fun PodcastContent(
                 actions = {
                     HeaderActionButton(
                         enabled = !uiState.isRefreshingSubscriptions && !uiState.isLoadingFeed,
+                        isLoading = uiState.isRefreshingSubscriptions || uiState.isLoadingFeed,
                         onClick = {
                             selectedSubscription?.let(onRefreshSubscriptionClick)
                                 ?: onRefreshSourcesClick()
@@ -201,6 +203,14 @@ private fun PodcastSubscriptionListPage(
     val enabledSources = sources.filter { it.enabled }
     val visibleSources = filterPodcastSubscriptions(enabledSources, uiState.searchQuery)
 
+    if (uiState.isRefreshingSubscriptions) {
+        CinemaLoading(
+            modifier = Modifier.fillMaxSize(),
+            message = "正在刷新播客栏目"
+        )
+        return
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         PodcastSearchHeader(
             query = uiState.searchQuery,
@@ -218,9 +228,6 @@ private fun PodcastSubscriptionListPage(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             when {
-                uiState.isRefreshingSubscriptions && sources.isEmpty() -> {
-                    item { PodcastLoadingCard(message = "正在刷新播客栏目") }
-                }
                 enabledSources.isEmpty() -> {
                     item {
                         CinemaMessage(
@@ -269,6 +276,14 @@ private fun PodcastEpisodeListPage(
     val feedImageUrl = feed?.imageUrl?.ifBlank { subscription?.imageUrl.orEmpty() } ?: subscription?.imageUrl.orEmpty()
     val episodes = feed?.episodes.orEmpty()
     val visibleEpisodes = filterFeedEpisodes(episodes, uiState.searchQuery)
+
+    if (uiState.isLoadingFeed) {
+        CinemaLoading(
+            modifier = Modifier.fillMaxSize(),
+            message = "正在刷新往期节目"
+        )
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         PodcastFeedHeader(
@@ -385,6 +400,7 @@ private fun PodcastSearchHeader(
         )
         HeaderActionButton(
             enabled = !isRefreshing,
+            isLoading = isRefreshing,
             contentDescription = refreshDescription,
             onClick = onRefreshClick
         )
@@ -703,24 +719,33 @@ private fun PodcastLoadingCard(message: String) {
 @Composable
 private fun HeaderActionButton(
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     contentDescription: String = "刷新播客节目",
     onClick: () -> Unit
 ) {
     IconButton(
         onClick = onClick,
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         modifier = Modifier
             .size(40.dp)
             .clip(RectangleShape)
             .background(AppColors.Surface)
             .border(1.dp, AppColors.Divider, RectangleShape)
     ) {
-        Icon(
-            imageVector = Icons.Default.Refresh,
-            contentDescription = contentDescription,
-            tint = if (enabled) AppColors.Primary else AppColors.TextTertiary,
-            modifier = Modifier.size(18.dp)
-        )
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(17.dp),
+                color = AppColors.Primary,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = contentDescription,
+                tint = if (enabled) AppColors.Primary else AppColors.TextTertiary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 

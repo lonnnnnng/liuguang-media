@@ -241,8 +241,10 @@ class PodcastViewModel @Inject constructor(
     }
 
     fun refreshSubscriptions() {
+        if (_uiState.value.isRefreshingSubscriptions) return
+
         viewModelScope.launch {
-            val currentSubscriptions = subscriptions.value
+            val currentSubscriptions = podcastRepository.getAllSubscriptions()
             if (currentSubscriptions.isEmpty()) {
                 _uiState.value = _uiState.value.copy(message = "还没有播客源")
                 return@launch

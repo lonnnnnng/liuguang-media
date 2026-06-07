@@ -293,7 +293,7 @@ fun MediaFilterHeader(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             leadingAction?.let { action ->
@@ -302,7 +302,7 @@ fun MediaFilterHeader(
 
             LazyRow(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 items(
                     items = filters,
@@ -448,7 +448,7 @@ private fun MediaFilterChip(
     Text(
         text = label,
         modifier = Modifier
-            .height(28.dp)
+            .height(24.dp)
             .clip(RectangleShape)
             .background(if (selected) AppColors.Primary else AppColors.Surface)
             .then(
@@ -459,7 +459,7 @@ private fun MediaFilterChip(
                 }
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 9.dp, vertical = 5.dp),
+            .padding(horizontal = 7.dp, vertical = 3.dp),
         color = if (selected) AppColors.OnPrimary else AppColors.TextPrimary,
         fontSize = 11.sp,
         lineHeight = 13.sp,
