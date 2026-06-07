@@ -271,12 +271,12 @@ fun MediaFilterHeader(
         modifier = modifier
             .fillMaxWidth()
             .background(AppColors.Shell)
-            .padding(start = 14.dp, top = 6.dp, end = 14.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(start = 14.dp, top = 6.dp, end = 14.dp, bottom = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             MediaSearchField(
@@ -293,7 +293,7 @@ fun MediaFilterHeader(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             leadingAction?.let { action ->
@@ -302,7 +302,7 @@ fun MediaFilterHeader(
 
             LazyRow(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(
                     items = filters,
@@ -409,13 +409,13 @@ private fun MediaFilterActionButton(
 ) {
     Row(
         modifier = Modifier
-            .height(if (compact) 44.dp else 34.dp)
-            .defaultMinSize(minWidth = if (compact) 44.dp else 72.dp)
+            .height(if (compact) 44.dp else 30.dp)
+            .defaultMinSize(minWidth = if (compact) 44.dp else 58.dp)
             .clip(RectangleShape)
             .background(AppColors.PrimaryLight)
             .border(1.dp, AppColors.Primary.copy(alpha = 0.34f), RectangleShape)
             .clickable(enabled = action.enabled, onClick = action.onClick)
-            .padding(horizontal = if (compact) 0.dp else 10.dp),
+            .padding(horizontal = if (compact) 0.dp else 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -423,15 +423,15 @@ private fun MediaFilterActionButton(
             imageVector = action.icon,
             contentDescription = action.contentDescription,
             tint = if (action.enabled) AppColors.Primary else AppColors.TextTertiary,
-            modifier = Modifier.size(if (compact) 19.dp else 16.dp)
+            modifier = Modifier.size(if (compact) 19.dp else 15.dp)
         )
         if (!compact) {
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(3.dp))
             Text(
                 text = action.label,
                 color = if (action.enabled) AppColors.Primary else AppColors.TextTertiary,
-                fontSize = 12.sp,
-                lineHeight = 14.sp,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1
             )
@@ -448,7 +448,7 @@ private fun MediaFilterChip(
     Text(
         text = label,
         modifier = Modifier
-            .height(34.dp)
+            .height(28.dp)
             .clip(RectangleShape)
             .background(if (selected) AppColors.Primary else AppColors.Surface)
             .then(
@@ -459,10 +459,10 @@ private fun MediaFilterChip(
                 }
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .padding(horizontal = 9.dp, vertical = 5.dp),
         color = if (selected) AppColors.OnPrimary else AppColors.TextPrimary,
-        fontSize = 12.sp,
-        lineHeight = 14.sp,
+        fontSize = 11.sp,
+        lineHeight = 13.sp,
         fontWeight = FontWeight.Black,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
