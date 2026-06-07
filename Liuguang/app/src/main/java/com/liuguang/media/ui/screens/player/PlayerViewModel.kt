@@ -41,12 +41,28 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import android.content.Context
 
+enum class PlaybackStatusKind {
+    Loading,
+    Ready,
+    AutoSwitching,
+    Failed,
+    Ended
+}
+
 data class PlaybackUiState(
     val sourceName: String = "线路",
-    val message: String = "正在检测线路",
+    val message: String = "正在加载中...",
     val isRecovering: Boolean = true,
-    val isFailed: Boolean = false
+    val isFailed: Boolean = false,
+    val statusKind: PlaybackStatusKind = PlaybackStatusKind.Loading
 )
+
+private fun PlaybackStatusKind.loadingMessage(): String {
+    return when (this) {
+        PlaybackStatusKind.AutoSwitching -> "正在切换线路..."
+        else -> "正在加载中..."
+    }
+}
 
 data class PlayerSourceOption(
     val key: String,
@@ -196,10 +212,17 @@ class PlayerViewModel @Inject constructor(
             when (playbackState) {
                 Player.STATE_BUFFERING -> {
                     val sourceName = playbackCandidates.getOrNull(currentCandidateIndex)?.sourceName ?: "线路"
+                    val currentState = _playbackUiState.value
+                    val statusKind = if (currentState.statusKind == PlaybackStatusKind.AutoSwitching) {
+                        PlaybackStatusKind.AutoSwitching
+                    } else {
+                        PlaybackStatusKind.Loading
+                    }
                     _playbackUiState.value = PlaybackUiState(
                         sourceName = sourceName,
-                        message = "$sourceName 正在缓冲",
-                        isRecovering = false
+                        message = statusKind.loadingMessage(),
+                        isRecovering = true,
+                        statusKind = statusKind
                     )
                 }
                 Player.STATE_READY -> {
@@ -209,7 +232,8 @@ class PlayerViewModel @Inject constructor(
                     _playbackUiState.value = PlaybackUiState(
                         sourceName = sourceName,
                         message = "$sourceName 已接入",
-                        isRecovering = false
+                        isRecovering = false,
+                        statusKind = PlaybackStatusKind.Ready
                     )
                     Log.d(TAG, "onPlaybackStateChanged - duration=${_duration.value}ms")
                 }
@@ -218,7 +242,8 @@ class PlayerViewModel @Inject constructor(
                     _playbackUiState.value = PlaybackUiState(
                         sourceName = sourceName,
                         message = "播放完成",
-                        isRecovering = false
+                        isRecovering = false,
+                        statusKind = PlaybackStatusKind.Ended
                     )
                 }
             }
@@ -268,13 +293,15 @@ class PlayerViewModel @Inject constructor(
             viewModelScope.launch {
                 startInitialPlayback()
             }
+            preloadFallbackCandidates()
             preloadEpisodeNavigationForCurrentCandidate()
         } else {
             Log.w(TAG, "init - episodeUrl is blank, not starting playback")
             _playbackUiState.value = PlaybackUiState(
                 message = "没有可播放地址",
                 isRecovering = false,
-                isFailed = true
+                isFailed = true,
+                statusKind = PlaybackStatusKind.Failed
             )
         }
     }
@@ -326,17 +353,6 @@ class PlayerViewModel @Inject constructor(
     fun loadSourceOptions() {
         publishSourceOptions()
         if (fallbackCandidatesLoaded) return
-
-        val loadingMessage = if (title.isNotBlank()) {
-            "正在查找《$title》的备用线路"
-        } else {
-            "正在查找备用线路"
-        }
-        _playbackUiState.value = PlaybackUiState(
-            sourceName = currentSourceName(),
-            message = loadingMessage,
-            isRecovering = true
-        )
         preloadFallbackCandidates()
     }
 
@@ -349,11 +365,6 @@ class PlayerViewModel @Inject constructor(
                 playCandidate(index)
             } else {
                 Log.w(TAG, "switchToSource - source not found: $sourceKey")
-                _playbackUiState.value = PlaybackUiState(
-                    sourceName = currentSourceName(),
-                    message = "正在查找备用线路",
-                    isRecovering = true
-                )
                 preloadFallbackCandidates()
             }
         }
@@ -373,37 +384,22 @@ class PlayerViewModel @Inject constructor(
             _playbackUiState.value = PlaybackUiState(
                 message = "没有可播放地址",
                 isRecovering = false,
-                isFailed = true
+                isFailed = true,
+                statusKind = PlaybackStatusKind.Failed
             )
             return
         }
 
         _playbackUiState.value = PlaybackUiState(
             sourceName = candidate.sourceName,
-            message = "正在检测 ${candidate.sourceName}",
-            isRecovering = true
+            message = "正在加载中...",
+            isRecovering = true,
+            statusKind = PlaybackStatusKind.Loading
         )
-
-        if (isPlayableCandidate(candidate)) {
-            playCandidate(0)
-            return
-        }
-
-        Log.w(TAG, "startInitialPlayback - initial URL is not playable, url=${candidate.url}")
-        val nextIndex = findNextPlayableCandidate()
-        if (nextIndex != null) {
-            playCandidate(nextIndex)
-        } else {
-            _playbackUiState.value = PlaybackUiState(
-                sourceName = candidate.sourceName,
-                message = "当前影片所有已知线路均不可播放",
-                isRecovering = false,
-                isFailed = true
-            )
-        }
+        playCandidate(0)
     }
 
-    private fun playCandidate(index: Int) {
+    private fun playCandidate(index: Int, statusKind: PlaybackStatusKind = PlaybackStatusKind.Loading) {
         val candidate = playbackCandidates.getOrNull(index) ?: return
         currentCandidateIndex = index
         _activeEpisodeUrl.value = candidate.url
@@ -418,8 +414,9 @@ class PlayerViewModel @Inject constructor(
         preloadEpisodeNavigationForCurrentCandidate()
         _playbackUiState.value = PlaybackUiState(
             sourceName = candidate.sourceName,
-            message = "正在连接 ${candidate.sourceName}",
-            isRecovering = index > 0
+            message = statusKind.loadingMessage(),
+            isRecovering = true,
+            statusKind = statusKind
         )
         Log.d(TAG, "playCandidate - index=$index, source=${candidate.sourceName}, label=${candidate.episodeLabel}, url=${candidate.url}")
         playerManager.play(candidate.url)
@@ -449,19 +446,21 @@ class PlayerViewModel @Inject constructor(
             val failedSource = playbackCandidates.getOrNull(currentCandidateIndex)?.sourceName ?: "当前线路"
             _playbackUiState.value = PlaybackUiState(
                 sourceName = failedSource,
-                message = "$failedSource 播放失败，正在切换备用线路",
-                isRecovering = true
+                message = "正在切换线路...",
+                isRecovering = true,
+                statusKind = PlaybackStatusKind.AutoSwitching
             )
 
             val nextIndex = findNextPlayableCandidate()
             if (nextIndex != null) {
-                playCandidate(nextIndex)
+                playCandidate(nextIndex, PlaybackStatusKind.AutoSwitching)
             } else {
                 _playbackUiState.value = PlaybackUiState(
                     sourceName = failedSource,
                     message = "所有已知线路均不可播放：${error.message ?: "资源失效"}",
                     isRecovering = false,
-                    isFailed = true
+                    isFailed = true,
+                    statusKind = PlaybackStatusKind.Failed
                 )
             }
             isRecoveringPlayback = false
@@ -518,8 +517,9 @@ class PlayerViewModel @Inject constructor(
         if (updateUi) {
             _playbackUiState.value = PlaybackUiState(
                 sourceName = currentSourceName(),
-                message = "正在查找《$targetTitle》的备用线路",
-                isRecovering = true
+                message = "正在切换线路...",
+                isRecovering = true,
+                statusKind = PlaybackStatusKind.AutoSwitching
             )
         }
 
@@ -1065,8 +1065,9 @@ class LivePlayerViewModel @Inject constructor(
     private val _playbackUiState = MutableStateFlow(
         PlaybackUiState(
             sourceName = "IPTV直播",
-            message = "正在连接直播流",
-            isRecovering = true
+            message = "正在加载中...",
+            isRecovering = true,
+            statusKind = PlaybackStatusKind.Loading
         )
     )
     val playbackUiState: StateFlow<PlaybackUiState> = _playbackUiState.asStateFlow()
@@ -1113,10 +1114,17 @@ class LivePlayerViewModel @Inject constructor(
             val sourceName = currentLineLabel()
             when (playbackState) {
                 Player.STATE_BUFFERING -> {
+                    val currentState = _playbackUiState.value
+                    val statusKind = if (currentState.statusKind == PlaybackStatusKind.AutoSwitching) {
+                        PlaybackStatusKind.AutoSwitching
+                    } else {
+                        PlaybackStatusKind.Loading
+                    }
                     _playbackUiState.value = PlaybackUiState(
                         sourceName = sourceName,
-                        message = "$sourceName 正在缓冲",
-                        isRecovering = true
+                        message = statusKind.loadingMessage(),
+                        isRecovering = true,
+                        statusKind = statusKind
                     )
                 }
                 Player.STATE_READY -> {
@@ -1127,7 +1135,8 @@ class LivePlayerViewModel @Inject constructor(
                     _playbackUiState.value = PlaybackUiState(
                         sourceName = sourceName,
                         message = "$sourceName 已接入直播流",
-                        isRecovering = false
+                        isRecovering = false,
+                        statusKind = PlaybackStatusKind.Ready
                     )
                 }
                 Player.STATE_ENDED -> {
@@ -1185,7 +1194,8 @@ class LivePlayerViewModel @Inject constructor(
                 sourceName = "IPTV直播",
                 message = "没有可播放的直播地址",
                 isRecovering = false,
-                isFailed = true
+                isFailed = true,
+                statusKind = PlaybackStatusKind.Failed
             )
         }
     }
@@ -1244,7 +1254,7 @@ class LivePlayerViewModel @Inject constructor(
         playerManager.stopAndRelease()
     }
 
-    private fun playLiveCandidate(index: Int) {
+    private fun playLiveCandidate(index: Int, statusKind: PlaybackStatusKind = PlaybackStatusKind.Loading) {
         val candidate = playbackCandidates.getOrNull(index) ?: return
         currentCandidateIndex = index
         _activeLiveUrl.value = candidate.url
@@ -1255,8 +1265,9 @@ class LivePlayerViewModel @Inject constructor(
         publishLineOptions()
         _playbackUiState.value = PlaybackUiState(
             sourceName = currentLineLabel(),
-            message = "正在连接 ${currentLineLabel()}",
-            isRecovering = true
+            message = statusKind.loadingMessage(),
+            isRecovering = true,
+            statusKind = statusKind
         )
         Log.d(TAG, "playLiveCandidate - index=$index, url=${candidate.url}")
         playerManager.play(candidate.url)
@@ -1271,20 +1282,22 @@ class LivePlayerViewModel @Inject constructor(
             val failedLine = currentLineLabel()
             _playbackUiState.value = PlaybackUiState(
                 sourceName = failedLine,
-                message = "$failedLine 不可用，正在切换同名备用线路",
-                isRecovering = true
+                message = "正在切换线路...",
+                isRecovering = true,
+                statusKind = PlaybackStatusKind.AutoSwitching
             )
 
             ensureSameNameLinesLoaded()
             val nextIndex = findNextLiveLineIndex()
             if (nextIndex != null) {
-                playLiveCandidate(nextIndex)
+                playLiveCandidate(nextIndex, PlaybackStatusKind.AutoSwitching)
             } else {
                 _playbackUiState.value = PlaybackUiState(
                     sourceName = failedLine,
                     message = "同名频道暂无可用备用线路：$reason",
                     isRecovering = false,
-                    isFailed = true
+                    isFailed = true,
+                    statusKind = PlaybackStatusKind.Failed
                 )
                 publishLineOptions()
             }

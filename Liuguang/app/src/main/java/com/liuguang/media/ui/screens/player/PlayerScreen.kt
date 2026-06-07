@@ -12,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -24,17 +25,21 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.verticalScroll
@@ -58,11 +63,10 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -80,13 +84,18 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
@@ -170,6 +179,10 @@ fun EpisodePlayerScreen(
                 exitFullscreen(activity)
             }
         }
+    }
+
+    if (!isLeaving) {
+        KeepScreenAwakeWhileVideoVisible(activity)
     }
 
     DisposableEffect(Unit) {
@@ -636,6 +649,10 @@ fun LivePlayerScreen(
         }
     }
 
+    if (!isLeaving) {
+        KeepScreenAwakeWhileVideoVisible(activity)
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             if (!isLeaving) {
@@ -717,7 +734,6 @@ fun LivePlayerScreen(
                         currentPositionState = currentPositionState,
                         durationState = durationState,
                         playbackUiState = playbackUiState,
-                        recoveringTitle = "正在连接直播流",
                         brightnessOverlay = brightnessOverlay,
                         volumeOverlay = volumeOverlay,
                         maxVolume = maxVolume,
@@ -866,7 +882,6 @@ fun LivePlayerScreen(
                     currentPositionState = currentPositionState,
                     durationState = durationState,
                     playbackUiState = playbackUiState,
-                    recoveringTitle = "正在连接直播流",
                     brightnessOverlay = brightnessOverlay,
                     volumeOverlay = volumeOverlay,
                     maxVolume = maxVolume,
@@ -980,7 +995,6 @@ fun RadioPlayerScreen(
     @Suppress("UNUSED_VARIABLE")
     val unusedRouteArgs = url to sourceId
     val context = LocalContext.current
-    val activity = context as? Activity
     val clipboardManager = remember(context) {
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
@@ -996,13 +1010,6 @@ fun RadioPlayerScreen(
         if (!isLeaving) {
             isLeaving = true
             viewModel.stopPlayback()
-        }
-    }
-
-    DisposableEffect(activity) {
-        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose {
-            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
@@ -1373,6 +1380,92 @@ private fun RadioPlaybackInfo(
 }
 
 @Composable
+private fun KeepScreenAwakeWhileVideoVisible(activity: Activity?) {
+    DisposableEffect(activity) {
+        val window = activity?.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+}
+
+@Composable
+private fun PlayerSeekBar(
+    currentPosition: Long,
+    duration: Long,
+    onSeekTo: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var barSize by remember { mutableStateOf(IntSize.Zero) }
+    val progress = if (duration > 0L) {
+        (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val inactiveColor = AppColors.OnMedia.copy(alpha = 0.22f)
+    val activeColor = AppColors.Primary
+    val thumbOuterColor = AppColors.OnMedia.copy(alpha = 0.94f)
+
+    fun seekFromOffset(x: Float) {
+        if (duration <= 0L || barSize.width <= 0) return
+        val targetProgress = (x / barSize.width.toFloat()).coerceIn(0f, 1f)
+        onSeekTo((targetProgress * duration).toLong())
+    }
+
+    Box(
+        modifier = modifier
+            .height(30.dp)
+            .onSizeChanged { barSize = it }
+            .pointerInput(duration, barSize.width) {
+                detectTapGestures { offset ->
+                    seekFromOffset(offset.x)
+                }
+            }
+            .pointerInput(duration, barSize.width) {
+                detectDragGestures(
+                    onDragStart = { offset -> seekFromOffset(offset.x) },
+                    onDrag = { change, _ ->
+                        change.consume()
+                        seekFromOffset(change.position.x)
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val centerY = size.height / 2f
+            val thumbX = (size.width * progress).coerceIn(0f, size.width)
+            val trackStrokeWidth = 4.dp.toPx()
+            drawLine(
+                color = inactiveColor,
+                start = Offset(0f, centerY),
+                end = Offset(size.width, centerY),
+                strokeWidth = trackStrokeWidth,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = activeColor,
+                start = Offset(0f, centerY),
+                end = Offset(thumbX, centerY),
+                strokeWidth = trackStrokeWidth,
+                cap = StrokeCap.Round
+            )
+            drawCircle(
+                color = thumbOuterColor,
+                radius = 6.dp.toPx(),
+                center = Offset(thumbX, centerY)
+            )
+            drawCircle(
+                color = activeColor,
+                radius = 3.6.dp.toPx(),
+                center = Offset(thumbX, centerY)
+            )
+        }
+    }
+}
+
+@Composable
 private fun PlayerProgressBar(
     currentPosition: Long,
     duration: Long
@@ -1545,7 +1638,6 @@ private fun PlayerSurface(
     currentPositionState: State<Long>,
     durationState: State<Long>,
     playbackUiState: PlaybackUiState,
-    recoveringTitle: String = "正在切换备用线路",
     brightnessOverlay: Float?,
     volumeOverlay: Int?,
     maxVolume: Int,
@@ -1580,6 +1672,14 @@ private fun PlayerSurface(
 
     var seekOverlayPosition by remember { mutableStateOf<Long?>(null) }
     var seekOverlayForward by remember { mutableStateOf(true) }
+    val playerContentModifier = if (isFullscreen) {
+        Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(6.dp)
+    } else {
+        Modifier.fillMaxSize()
+    }
 
     Box(
         modifier = modifier
@@ -1592,320 +1692,335 @@ private fun PlayerSurface(
                         .fillMaxWidth()
                         .aspectRatio(16f / 9f)
                         .clip(RectangleShape)
-                        .border(1.dp, AppColors.Divider, RectangleShape)
                 }
             )
-            .background(AppColors.Background)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onToggleControlsState.value() },
-                    onDoubleTap = { offset ->
-                        if (isFullscreen) {
-                            when {
-                                offset.x < size.width / 3f -> {
-                                    onRewindClickState.value?.invoke() ?: onTogglePlayState.value()
-                                }
-
-                                offset.x > size.width * 2f / 3f -> {
-                                    onForwardClickState.value?.invoke() ?: onTogglePlayState.value()
-                                }
-
-                                else -> onTogglePlayState.value()
-                            }
-                        } else {
-                            onTogglePlayState.value()
-                        }
-                    }
-                )
-            }
-            .pointerInput(Unit) {
-                var dragMode: PlayerDragMode? = null
-                var startX = 0f
-                var startPosition = 0L
-                var startBrightness = 0.5f
-                var startVolume = 0
-                var totalDragX = 0f
-                var totalDragY = 0f
-                val directionThreshold = 10.dp.toPx()
-
-                fun clearGestureOverlays() {
-                    seekOverlayPosition = null
-                    onGestureEndState.value()
-                }
-
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        dragMode = null
-                        startX = offset.x
-                        startPosition = currentPositionState.value
-                        startBrightness = readCurrentBrightness(context, activity)
-                        startVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-                        totalDragX = 0f
-                        totalDragY = 0f
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        val screenWidth = size.width
-                        val screenHeight = size.height
-                        if (screenWidth <= 0 || screenHeight <= 0) return@detectDragGestures
-
-                        totalDragX += dragAmount.x
-                        totalDragY += dragAmount.y
-
-                        if (dragMode == null) {
-                            val horizontalDistance = abs(totalDragX)
-                            val verticalDistance = abs(totalDragY)
-                            if (horizontalDistance < directionThreshold && verticalDistance < directionThreshold) {
-                                return@detectDragGestures
-                            }
-
-                            dragMode = when {
-                                isFullscreen &&
-                                    durationState.value > 0L &&
-                                    horizontalDistance > verticalDistance -> PlayerDragMode.Seek
-
-                                verticalDistance >= horizontalDistance -> {
-                                    if (startX < screenWidth / 2f) PlayerDragMode.Brightness else PlayerDragMode.Volume
-                                }
-
-                                else -> return@detectDragGestures
-                            }
-                        }
-
-                        when (dragMode) {
-                            PlayerDragMode.Seek -> {
-                                val durationValue = durationState.value
-                                if (durationValue <= 0L) return@detectDragGestures
-                                val delta = (totalDragX / screenWidth * durationValue).toLong()
-                                val target = quickSeekPosition(startPosition, durationValue, delta)
-                                seekOverlayForward = totalDragX >= 0f
-                                seekOverlayPosition = target
-                                onSeekToState.value(target)
-                            }
-
-                            PlayerDragMode.Brightness -> {
-                                val newBrightness = (startBrightness - totalDragY / screenHeight).coerceIn(0f, 1f)
-                                activity?.window?.let { window ->
-                                    window.attributes = window.attributes.apply {
-                                        screenBrightness = newBrightness
-                                    }
-                                }
-                                onBrightnessChangeState.value(newBrightness)
-                            }
-
-                            PlayerDragMode.Volume -> {
-                                val volumeDelta = (-totalDragY / screenHeight * maxVolume).roundToInt()
-                                val newVolume = (startVolume + volumeDelta).coerceIn(0, maxVolume)
-                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
-                                onVolumeChangeState.value(newVolume)
-                            }
-
-                            null -> Unit
-                        }
-                    },
-                    onDragCancel = { clearGestureOverlays() },
-                    onDragEnd = { clearGestureOverlays() }
-                )
-            }
+            .background(Color.Black)
     ) {
-        playerViewFactory()
+        Box(
+            modifier = playerContentModifier
+                .background(Color.Black)
+        ) {
+            playerViewFactory()
 
-        seekOverlayPosition?.let { position ->
-            GestureOverlay(
-                icon = if (seekOverlayForward) Icons.Default.FastForward else Icons.Default.FastRewind,
-                text = "${formatTime(position)} / ${formatTime(durationState.value)}"
-            )
-        }
-
-        brightnessOverlay?.let { brightness ->
-            GestureOverlay(
-                icon = Icons.Default.Brightness6,
-                text = "${(brightness * 100).toInt()}%"
-            )
-        }
-
-        volumeOverlay?.let { volume ->
-            GestureOverlay(
-                icon = if (volume == 0) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                text = "${(volume * 100 / maxVolume)}%"
-            )
-        }
-
-        if (!showControls && (playbackUiState.isRecovering || playbackUiState.isFailed)) {
-            PlaybackStatusOverlay(
-                state = playbackUiState,
-                recoveringTitle = recoveringTitle,
-                onRetryPlayback = onRetryPlayback
-            )
-        }
-
-        if (showControls) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppColors.MediaScrim.copy(alpha = 0.38f))
-            ) {
-                if (isFullscreen) {
-                    FullscreenPlayerBackButton(
-                        onClick = onExitFullscreen,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(10.dp)
-                    )
-                }
+                    .pointerInput(isFullscreen) {
+                        detectTapGestures(
+                            onTap = { onToggleControlsState.value() },
+                            onDoubleTap = { offset ->
+                                if (isFullscreen) {
+                                    when {
+                                        offset.x < size.width / 3f -> {
+                                            onRewindClickState.value?.invoke() ?: onTogglePlayState.value()
+                                        }
 
+                                        offset.x > size.width * 2f / 3f -> {
+                                            onForwardClickState.value?.invoke() ?: onTogglePlayState.value()
+                                        }
+
+                                        else -> onTogglePlayState.value()
+                                    }
+                                } else {
+                                    onTogglePlayState.value()
+                                }
+                            }
+                        )
+                    }
+                    .pointerInput(isFullscreen) {
+                        var dragMode: PlayerDragMode? = null
+                        var startX = 0f
+                        var startPosition = 0L
+                        var startBrightness = 0.5f
+                        var startVolume = 0
+                        var totalDragX = 0f
+                        var totalDragY = 0f
+                        val directionThreshold = 10.dp.toPx()
+
+                        fun clearGestureOverlays() {
+                            seekOverlayPosition = null
+                            onGestureEndState.value()
+                        }
+
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                dragMode = null
+                                startX = offset.x
+                                startPosition = currentPositionState.value
+                                startBrightness = readCurrentBrightness(context, activity)
+                                startVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                                totalDragX = 0f
+                                totalDragY = 0f
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                val screenWidth = size.width
+                                val screenHeight = size.height
+                                if (screenWidth <= 0 || screenHeight <= 0) return@detectDragGestures
+
+                                totalDragX += dragAmount.x
+                                totalDragY += dragAmount.y
+
+                                if (dragMode == null) {
+                                    val horizontalDistance = abs(totalDragX)
+                                    val verticalDistance = abs(totalDragY)
+                                    if (horizontalDistance < directionThreshold && verticalDistance < directionThreshold) {
+                                        return@detectDragGestures
+                                    }
+
+                                    dragMode = when {
+                                        isFullscreen &&
+                                            durationState.value > 0L &&
+                                            horizontalDistance > verticalDistance -> PlayerDragMode.Seek
+
+                                        verticalDistance >= horizontalDistance -> {
+                                            if (startX < screenWidth / 2f) PlayerDragMode.Brightness else PlayerDragMode.Volume
+                                        }
+
+                                        else -> return@detectDragGestures
+                                    }
+                                }
+
+                                when (dragMode) {
+                                    PlayerDragMode.Seek -> {
+                                        val durationValue = durationState.value
+                                        if (durationValue <= 0L) return@detectDragGestures
+                                        val delta = (totalDragX / screenWidth * durationValue).toLong()
+                                        val target = quickSeekPosition(startPosition, durationValue, delta)
+                                        seekOverlayForward = totalDragX >= 0f
+                                        seekOverlayPosition = target
+                                        onSeekToState.value(target)
+                                    }
+
+                                    PlayerDragMode.Brightness -> {
+                                        val newBrightness = (startBrightness - totalDragY / screenHeight).coerceIn(0f, 1f)
+                                        activity?.window?.let { window ->
+                                            window.attributes = window.attributes.apply {
+                                                screenBrightness = newBrightness
+                                            }
+                                        }
+                                        onBrightnessChangeState.value(newBrightness)
+                                    }
+
+                                    PlayerDragMode.Volume -> {
+                                        val volumeDelta = (-totalDragY / screenHeight * maxVolume).roundToInt()
+                                        val newVolume = (startVolume + volumeDelta).coerceIn(0, maxVolume)
+                                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+                                        onVolumeChangeState.value(newVolume)
+                                    }
+
+                                    null -> Unit
+                                }
+                            },
+                            onDragCancel = { clearGestureOverlays() },
+                            onDragEnd = { clearGestureOverlays() }
+                        )
+                    }
+            )
+
+            seekOverlayPosition?.let { position ->
+                GestureOverlay(
+                    icon = if (seekOverlayForward) Icons.Default.FastForward else Icons.Default.FastRewind,
+                    text = "${formatTime(position)} / ${formatTime(durationState.value)}"
+                )
+            }
+
+            brightnessOverlay?.let { brightness ->
+                GestureOverlay(
+                    icon = Icons.Default.Brightness6,
+                    text = "${(brightness * 100).toInt()}%"
+                )
+            }
+
+            volumeOverlay?.let { volume ->
+                GestureOverlay(
+                    icon = if (volume == 0) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                    text = "${(volume * 100 / maxVolume)}%"
+                )
+            }
+
+            val shouldShowStatusOverlay = !showControls && playbackUiState.statusKind in setOf(
+                PlaybackStatusKind.Loading,
+                PlaybackStatusKind.AutoSwitching,
+                PlaybackStatusKind.Failed
+            )
+            if (shouldShowStatusOverlay) {
+                PlaybackStatusOverlay(
+                    state = playbackUiState,
+                    onRetryPlayback = onRetryPlayback
+                )
+            }
+
+            if (showControls) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(AppColors.MediaScrim.copy(alpha = 0.38f))
+                ) {
+                    if (isFullscreen) {
+                        FullscreenPlayerBackButton(
+                            onClick = onExitFullscreen,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(10.dp)
+                        )
+                    }
+
+                    Surface(
+                        onClick = onTogglePlay,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(58.dp),
+                        color = AppColors.MediaScrim.copy(alpha = 0.62f),
+                        contentColor = AppColors.OnMedia,
+                        shape = CircleShape,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.22f))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPlaying) "暂停" else "播放",
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .background(AppColors.MediaScrimSoft)
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val currentPosition = currentPositionState.value
+                            val duration = durationState.value
+                            Text(
+                                text = formatTime(currentPosition),
+                                color = AppColors.OnMedia,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            PlayerSeekBar(
+                                currentPosition = currentPosition,
+                                duration = duration,
+                                onSeekTo = onSeekTo,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 10.dp)
+                            )
+                            Text(
+                                text = formatTime(duration),
+                                color = AppColors.OnMedia,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (!isFullscreen) {
+                                IconButton(onClick = onToggleFullscreen) {
+                                    Icon(
+                                        imageVector = Icons.Default.Fullscreen,
+                                        contentDescription = "全屏",
+                                        tint = AppColors.OnMedia
+                                    )
+                                }
+                            }
+                        }
+
+                        if (isFullscreen) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                onRewindClick?.let { rewindClick ->
+                                    PlayerFullscreenActionButton(
+                                        icon = Icons.Default.FastRewind,
+                                        label = "快退",
+                                        onClick = rewindClick,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                    )
+                                }
+                                onForwardClick?.let { forwardClick ->
+                                    PlayerFullscreenActionButton(
+                                        icon = Icons.Default.FastForward,
+                                        label = "快进",
+                                        onClick = forwardClick,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                    )
+                                }
+                                onSourceClick?.let { sourceClick ->
+                                    PlayerFullscreenActionButton(
+                                        icon = Icons.Default.SwapHoriz,
+                                        label = "换源",
+                                        onClick = sourceClick,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                    )
+                                }
+                                if (onSpeedClick != null && playbackSpeedLabel != null) {
+                                    PlayerFullscreenActionButton(
+                                        icon = Icons.Default.Speed,
+                                        label = playbackSpeedLabel,
+                                        onClick = onSpeedClick,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                    )
+                                }
+                                onCastClick?.let { castClick ->
+                                    PlayerFullscreenActionButton(
+                                        icon = Icons.Default.Cast,
+                                        label = "投屏",
+                                        onClick = castClick,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                    )
+                                }
+                                PlayerFullscreenActionButton(
+                                    icon = Icons.Default.FullscreenExit,
+                                    label = "退出",
+                                    onClick = onToggleFullscreen,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            } else if (!isPlaying && !playbackUiState.isFailed && playbackUiState.statusKind !in setOf(
+                    PlaybackStatusKind.Loading,
+                    PlaybackStatusKind.AutoSwitching
+                )
+            ) {
                 Surface(
                     onClick = onTogglePlay,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(74.dp),
-                    color = AppColors.MediaScrimSoft,
+                        .size(58.dp),
+                    color = AppColors.MediaScrim.copy(alpha = 0.62f),
                     contentColor = AppColors.OnMedia,
-                    shape = RectangleShape,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.28f))
+                    shape = CircleShape,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.22f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlaying) "暂停" else "播放",
-                            modifier = Modifier.size(46.dp)
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "播放",
+                            modifier = Modifier.size(34.dp)
                         )
                     }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(AppColors.MediaScrimSoft)
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val currentPosition = currentPositionState.value
-                        val duration = durationState.value
-                        Text(
-                            text = formatTime(currentPosition),
-                            color = AppColors.OnMedia,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Slider(
-                            value = if (duration > 0) currentPosition.toFloat() / duration else 0f,
-                            onValueChange = { progress -> onSeekTo((progress * duration).toLong()) },
-                            modifier = Modifier.weight(1f),
-                            colors = SliderDefaults.colors(
-                                thumbColor = AppColors.Primary,
-                                activeTrackColor = AppColors.Primary,
-                                inactiveTrackColor = AppColors.OnMedia.copy(alpha = 0.18f)
-                            )
-                        )
-                        Text(
-                            text = formatTime(duration),
-                            color = AppColors.OnMedia,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (!isFullscreen) {
-                            IconButton(onClick = onToggleFullscreen) {
-                                Icon(
-                                    imageVector = Icons.Default.Fullscreen,
-                                    contentDescription = "全屏",
-                                    tint = AppColors.OnMedia
-                                )
-                            }
-                        }
-                    }
-
-                    if (isFullscreen) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            onRewindClick?.let { rewindClick ->
-                                PlayerFullscreenActionButton(
-                                    icon = Icons.Default.FastRewind,
-                                    label = "快退",
-                                    onClick = rewindClick,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp)
-                                )
-                            }
-                            onForwardClick?.let { forwardClick ->
-                                PlayerFullscreenActionButton(
-                                    icon = Icons.Default.FastForward,
-                                    label = "快进",
-                                    onClick = forwardClick,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp)
-                                )
-                            }
-                            onSourceClick?.let { sourceClick ->
-                                PlayerFullscreenActionButton(
-                                    icon = Icons.Default.SwapHoriz,
-                                    label = "换源",
-                                    onClick = sourceClick,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp)
-                                )
-                            }
-                            if (onSpeedClick != null && playbackSpeedLabel != null) {
-                                PlayerFullscreenActionButton(
-                                    icon = Icons.Default.Speed,
-                                    label = playbackSpeedLabel,
-                                    onClick = onSpeedClick,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp)
-                                )
-                            }
-                            onCastClick?.let { castClick ->
-                                PlayerFullscreenActionButton(
-                                    icon = Icons.Default.Cast,
-                                    label = "投屏",
-                                    onClick = castClick,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp)
-                                )
-                            }
-                            PlayerFullscreenActionButton(
-                                icon = Icons.Default.FullscreenExit,
-                                label = "退出",
-                                onClick = onToggleFullscreen,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(40.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        } else if (!isPlaying && !playbackUiState.isFailed && !playbackUiState.isRecovering) {
-            Surface(
-                onClick = onTogglePlay,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(84.dp),
-                color = AppColors.MediaScrimSoft,
-                contentColor = AppColors.OnMedia,
-                shape = RectangleShape,
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.OnMedia.copy(alpha = 0.22f))
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "播放",
-                        modifier = Modifier.size(48.dp)
-                    )
                 }
             }
         }
@@ -1920,6 +2035,7 @@ private fun createTexturePlayerView(context: Context): PlayerView {
     ) as PlayerView).apply {
         useController = false
         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        setBackgroundColor(android.graphics.Color.BLACK)
         setShutterBackgroundColor(android.graphics.Color.BLACK)
     }
 }
@@ -1927,9 +2043,33 @@ private fun createTexturePlayerView(context: Context): PlayerView {
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.PlaybackStatusOverlay(
     state: PlaybackUiState,
-    recoveringTitle: String,
     onRetryPlayback: () -> Unit
 ) {
+    val isBusy = state.statusKind == PlaybackStatusKind.Loading ||
+        state.statusKind == PlaybackStatusKind.AutoSwitching
+    val title = when (state.statusKind) {
+        PlaybackStatusKind.Loading -> "正在加载中..."
+        PlaybackStatusKind.AutoSwitching -> "正在切换线路..."
+        PlaybackStatusKind.Failed -> "线路不可用"
+        else -> state.message
+    }
+
+    if (isBusy) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                color = AppColors.OnMedia,
+                strokeWidth = 1.8.dp
+            )
+        }
+        return
+    }
+
     Surface(
         onClick = {
             if (state.isFailed) onRetryPlayback()
@@ -1937,7 +2077,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlaybackStatusOverlay(
         modifier = Modifier
             .align(Alignment.Center)
             .padding(horizontal = 24.dp),
-        color = AppColors.MediaScrim,
+        color = AppColors.MediaScrim.copy(alpha = 0.86f),
         contentColor = AppColors.OnMedia,
         shape = RectangleShape,
         border = BorderStroke(
@@ -1951,7 +2091,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PlaybackStatusOverlay(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = if (state.isFailed) "线路不可用" else recoveringTitle,
+                text = title,
                 color = if (state.isFailed) AppColors.Error else AppColors.Primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Black
@@ -2346,7 +2486,6 @@ private fun readCurrentBrightness(context: Context, activity: Activity?): Float 
 private fun enterFullscreen(activity: Activity?) {
     activity?.apply {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -2359,7 +2498,6 @@ private fun enterFullscreen(activity: Activity?) {
 private fun exitFullscreen(activity: Activity?) {
     activity?.apply {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         WindowInsetsControllerCompat(window, window.decorView).apply {
